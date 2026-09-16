@@ -17,7 +17,7 @@ personaje con su dibujo es innegociable**.
 - **Reparto: 18 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 10 suites, 789 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 10 suites, 791 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
 - Versión publicada: **v1.8** (se ve al pie de la pantalla de inicio).
 
@@ -199,9 +199,16 @@ arte). Es la cara de la app; los 350 KB se pagan.
    sitio que les toca. Un marco de color plano habría dibujado un borde donde el arte
    se acaba, que es justo lo que un maskable no puede tener.
 
-**El nombre está escrito en dos sitios y tiene que decir lo mismo:** Android lo lee del
-manifiesto (`name` / `short_name`) y iOS de `apple-mobile-web-app-title`. Si se separan,
-la app se llama distinto según el aparato.
+**El nombre instalado está en TRES sitios y tienen que decir lo mismo:** `name` y
+`short_name` del manifiesto (Android) y `apple-mobile-web-app-title` (iOS). Si se
+separan, la app se llama distinto según el aparato.
+
+**Y el nombre instalado es «18-Z», no «Zombies en el 18».** El escritorio de Android
+corta la etiqueta cerca de los 12 caracteres, así que el nombre largo se vería
+«Zombies en…». El nombre completo vive en el `<title>` de la página —«18-Z: Zombies en
+el 18»—, que es lo que se ve en la pestaña y lo que se comparte. `chk-icono.py` **no
+fija el texto**: fija que los tres coincidan y que quepa bajo el icono. Un nombre puede
+cambiar; que la app se instale con dos nombres distintos, no.
 
 **El service worker existe por la instalación, no por la velocidad:** Android no ofrece
 instalar (WebAPK) sin uno que atienda `fetch`. Va a la **red primero** siempre —

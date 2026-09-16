@@ -19,9 +19,18 @@ QUE MIDE:
     que Android garantiza—, comprobado devolviendo ese recorte a su
     tamano y comparandolo con el maestro. Y el normal NO cabe, que es
     justamente por lo que hacen falta los dos.
- 4. El manifiesto dice «Zombies en el 18», apunta a archivos que existen
-    con las medidas que declara, y trae un icono `maskable`.
- 5. El HTML lo enlaza, y dice el MISMO nombre por el lado de iOS.
+ 4. El manifiesto apunta a archivos que existen con las medidas que
+    declara, y trae un icono `maskable`.
+ 5. LOS TRES SITIOS QUE DECIDEN EL NOMBRE INSTALADO DICEN LO MISMO:
+    `name` y `short_name` del manifiesto (Android) y
+    `apple-mobile-web-app-title` (iOS). NO se fija el texto, se fija que
+    COINCIDAN: el nombre puede cambiar —cambió, de «Zombies en el 18» a
+    «18-Z»— y lo que no puede pasar es que la app se instale llamandose
+    distinto segun el aparato. Ademas tiene que ser CORTO: el escritorio
+    de Android corta la etiqueta cerca de los 12 caracteres, que es
+    justo por lo que se acorto. El titulo de la pagina, en cambio, si
+    tiene que decir el nombre completo del juego: es lo que se ve en la
+    pestana y lo que se comparte.
  6. El service worker existe, se registra, atiende `fetch` —sin eso
     Android no ofrece instalar— y va a la RED PRIMERO.
  7. Vercel no deja cachear ni el manifiesto ni el service worker, y la
@@ -42,7 +51,8 @@ import icono
 
 RAIZ = ayuda.RAIZ
 ASSETS = os.path.join(RAIZ, "assets")
-NOMBRE = "Zombies en el 18"
+JUEGO = "Zombies en el 18"     # el nombre publico, el del titulo
+NOMBRE_MAX = 12                # lo que cabe bajo un icono de Android
 ZONA = 0.80           # lo unico que Android garantiza de un maskable
 
 
@@ -98,8 +108,14 @@ def main():
     rm = os.path.join(RAIZ, "manifest.json")
     if ok(os.path.exists(rm), "existe manifest.json"):
         m = json.load(open(rm, encoding="utf-8"))
-        ok(m.get("name") == NOMBRE, f'el manifiesto se llama «{NOMBRE}»', m.get("name"))
-        ok(m.get("short_name") == NOMBRE, "y el nombre corto dice lo mismo", m.get("short_name"))
+        nombre = m.get("name")
+        ok(bool(nombre), "el manifiesto declara un nombre", nombre)
+        ok(m.get("short_name") == nombre,
+           "el nombre corto del manifiesto dice lo mismo que el largo",
+           f'{nombre!r} contra {m.get("short_name")!r}')
+        ok(len(nombre or "") <= NOMBRE_MAX,
+           f"el nombre instalado cabe bajo el icono (<= {NOMBRE_MAX})",
+           f"{nombre!r} son {len(nombre or '')}")
         ok(m.get("display") == "standalone", "abre como app y no como pestana", m.get("display"))
         ok(m.get("start_url") == "/", "arranca en la raiz", m.get("start_url"))
         for c in ("background_color", "theme_color"):
@@ -121,10 +137,17 @@ def main():
     ok('rel="apple-touch-icon" href="assets/apple-touch-icon.png"' in s,
        "el HTML enlaza el icono de iOS")
     t = re.search(r'name="apple-mobile-web-app-title" content="([^"]+)"', s)
-    ok(t and t.group(1) == NOMBRE, f'iOS instala con el nombre «{NOMBRE}»', t and t.group(1))
+    ok(t is not None, "el HTML declara el nombre de instalacion de iOS")
+    if t:
+        man = json.load(open(rm, encoding="utf-8")) if os.path.exists(rm) else {}
+        ok(t.group(1) == man.get("name"),
+           "iOS y Android instalan con el MISMO nombre",
+           f'iOS {t.group(1)!r} contra manifiesto {man.get("name")!r}')
     ok('name="apple-mobile-web-app-capable" content="yes"' in s, "iOS lo abre a pantalla completa")
     ok('name="viewport"' in s, "trae viewport (sin el, el telefono maqueta a 980 px)")
-    ok(re.search(r"<title>Zombies en el 18</title>", s) is not None, "el titulo es el del juego")
+    ti = re.search(r"<title>([^<]+)</title>", s)
+    ok(ti and JUEGO in ti.group(1),
+       f"el titulo de la pagina dice «{JUEGO}» entero", ti and ti.group(1))
 
     # ---- 6. el service worker ------------------------------------------
     rs = os.path.join(RAIZ, "sw.js")
