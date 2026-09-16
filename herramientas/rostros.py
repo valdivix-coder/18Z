@@ -8,8 +8,15 @@ lado y arrastra el centro. Para ubicar la cara aisla la piel y toma el
 grupo MAS ALTO — la mediana de toda la piel incluye brazos y escote, y
 con ella el recorte se come la frente.
 
-`ajuste.json` guarda el ajuste fino por personaje: {alto del recorte como
-fraccion del dibujo, cuanto sube sobre la coronilla}. Con quince
+`ajuste.json` guarda el ajuste fino por personaje:
+    [alto del recorte como fraccion del dibujo,
+     cuanto sube sobre la coronilla,
+     (opcional) x de la cara como fraccion del ancho,
+     (opcional) y de la coronilla como fraccion del alto]
+El tercero y el cuarto ANULAN al detector. Hace falta cuando la piel de un brazo
+o un hombro se lee como cara y el recorte se va de lado: a La Primera le
+puso el centro en el 34% del ancho cuando estaba en el 51%, y salia
+cortada en la grilla. Con quince
 personajes, medir a mano gana a una heuristica que falla en dos. Los que
 llevan algo ENCIMA de la cara —aureola, boina, jockey— necesitan caja mas
 alta aunque la cara les quede mas chica: perder la boina es perder al
@@ -46,7 +53,10 @@ def cara(ruta):
 
 def recorta(ruta, cid):
     im, W, H, cx, cy = cara(ruta)
-    f, dy = AJUSTE.get(cid, [0.30, 0.30])
+    aj = AJUSTE.get(cid, [0.30, 0.30])
+    f, dy = aj[0], aj[1]
+    if len(aj) > 2: cx = aj[2] * W        # anclaje a mano: manda sobre el detector
+    if len(aj) > 3: cy = aj[3] * H
     ch = int(H * f); cw = int(round(ch * AR))
     if cw > W:
         cw = W; ch = int(round(cw / AR))

@@ -377,7 +377,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
     <div id="cast" aria-label="Los seis personajes en pose de pelea"></div>
     <div id="ctaGlow" aria-hidden="true"></div>
     <div id="cta"><span class="st">★</span>TOCA PARA INICIAR<span class="st">★</span></div>
-    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.5</div>
+    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.6</div>
   </div>
 
   <section id="pg-sel" aria-label="Selección de personaje">
@@ -455,18 +455,34 @@ var STAGE_W = 960, STAGE_H = 540;
               encoge a todos los demas, asi que a partir de ahi se entra
               con portada:null y se aparece solo en la seleccion.
 
-   El orden de ESTA lista es el orden de la grilla, o sea el orden en
-   que se van llenando las casillas. Hay 30; de la 31 en adelante no
-   habria donde ponerlas y `armar()` avisa por consola.
+   COMO SE FIJA EL ALTO, que es lo que decide si alguien "se ve mas
+   grande". El alto de la tinta del dibujo NO sirve: incluye aureolas,
+   boinas y melenas, asi que normalizar por el hace que a quien lleva
+   algo encima se le encoja el cuerpo, y quien no lleva nada salga con
+   el cuerpo entero. De ahi venia que Don Francis se viera mas grande.
+   Lo que hace que un reparto se lea como UNO es que las CABEZAS midan
+   parecido. Medido en un mismo cuadro, con todos a 234 px de alto:
+   Don Francis 35 px de cara, Tatan 33, Pedrito 31, Don Alberto 31,
+   La Primera 27 — un 30% de diferencia.
+   Igualar las caras del todo daria alturas de 436 a 579 (33% de
+   diferencia) y La Primera pasaria por encima de todos. Asi que se
+   iguala CON TOPE: la altura se acerca a la que igualaria las caras
+   pero se acota a [470, 530], un ±6% que se lee como estatura normal.
+   Resultado: la disparidad de caras baja de 1,30 a 1,18 y la de
+   estaturas se queda en 1,13.
+
+   El orden de ESTA lista es el orden en que se escribio, y no significa
+   nada: la grilla se ordena sola por nombre y la portada se sortea.
+   Hay 30 casillas; de la 31 en adelante `armar()` avisa por consola.
    =========================================================== */
 var PERSONAJES = [
-  {id:"laprimera",  nom:"La Primera",   w:373, h:504, sexo:"m"},
-  {id:"tatan",      nom:"Tatán",        w:437, h:508, sexo:"h"},
+  {id:"laprimera",  nom:"La Primera",   w:392, h:530, sexo:"m"},
+  {id:"tatan",      nom:"Tatán",        w:410, h:477, sexo:"h"},
   {id:"lanaya",     nom:"La Naya",      w:412, h:488, sexo:"m"},
   {id:"kidd",       nom:"Kidd Tutú",    w:448, h:486, sexo:"h"},
   {id:"lamon",      nom:"La Mon",       w:418, h:515, sexo:"m"},
   {id:"elboris",    nom:"El Boris",     w:400, h:491, sexo:"h"},
-  {id:"donfrancis", nom:"Don Francis",  w:408, h:492, sexo:"h"},
+  {id:"donfrancis", nom:"Don Francis",  w:390, h:470, sexo:"h"},
   {id:"eltono",     nom:"El Toño",      w:404, h:498, sexo:"h"},
   {id:"carter",     nom:"Mr. Carter",   w:386, h:484, sexo:"h"},
   {id:"felipito",   nom:"Felipito",     w:399, h:493, sexo:"h"},
@@ -474,7 +490,9 @@ var PERSONAJES = [
   {id:"soajanet",   nom:"La Soa Janet", w:362, h:488, sexo:"m"},
   {id:"tiaevelyn",  nom:"La Tía Evelyn",w:292, h:497, sexo:"m"},
   {id:"papurri",    nom:"El Papurri",   w:382, h:500, sexo:"h"},
-  {id:"compadre",   nom:"El Compadre",  w:410, h:493, sexo:"h"}
+  {id:"compadre",   nom:"El Compadre",  w:410, h:493, sexo:"h"},
+  {id:"pedrito",    nom:"Pedrito",      w:426, h:530, sexo:"h"},
+  {id:"donalberto", nom:"Don Alberto",  w:419, h:530, sexo:"h"}
 ];
 
 /* ===========================================================

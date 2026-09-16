@@ -14,12 +14,12 @@ personaje con su dibujo es innegociable**.
 - **Hecho:** pantalla de inicio (intro en video + coreografía de entrada + ambiente
   sintetizado) y pantalla de **selección de personaje** (cortina metálica, grilla de
   30 casillas, panel PLAYER 1 con el personaje en reposo de pelea, CONTINUAR).
-- **Reparto: 15 personajes.** La grilla los muestra a todos en orden alfabético; la
+- **Reparto: 17 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 9 suites, ~620 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 9 suites, ~660 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
-- Versión publicada: **v1.5** (se ve al pie de la pantalla de inicio).
+- Versión publicada: **v1.6** (se ve al pie de la pantalla de inicio).
 
 ## Regla no negociable
 **El arnés vive DENTRO del repositorio.** Nada que sirva para verificar el juego
@@ -39,9 +39,18 @@ la grilla, el rótulo en mayúsculas, la escala del panel y la precarga.
 ```
 - `id` → sus dos archivos: `assets/p-<id>.webp` (cuerpo entero, recortado al píxel) y
   `assets/f-<id>.webp` (rostro, proporción 135×82).
-- `w,h` → las medidas del dibujo. De ahí sale la **escala compartida**, en la portada
-  y en el panel: por eso las diferencias de estatura son las de verdad y no las de
-  encajar a cada uno en su caja.
+- `w,h` → de ahí sale la **escala compartida**, en la portada y en el panel.
+
+**Cómo se fija el alto — es lo que decide si alguien "se ve más grande".** El alto de
+la tinta NO sirve: incluye aureolas, boinas y melenas, así que normalizar por él
+encoge el cuerpo de quien lleva algo encima y deja entero el de quien no lleva nada.
+De ahí venía que Don Francis se viera más grande. Lo que hace que un reparto se lea
+como uno es que las **cabezas** midan parecido. Medido en un mismo cuadro, con todos a
+234 px: Don Francis 35 px de cara, Tatán 33, Pedrito 31, Don Alberto 31, La Primera 27
+— un 30 % de diferencia. Igualar del todo daría alturas de 436 a 579 y La Primera
+pasaría por encima de todos, así que se iguala **con tope**: la altura se acerca a la
+que igualaría las caras pero se acota a **[470, 530]**. La disparidad de caras baja de
+1,30 a 1,18 y la de estaturas se queda en 1,13.
 - `sexo` → `"h"` o `"m"`. Lo usa la alternancia de la portada, nada más.
 
 **El orden de la lista no significa nada.** La grilla se ordena sola por nombre
@@ -89,6 +98,14 @@ También limpia **motas sueltas**: píxeles aislados que no se ven pero estiran 
 de recorte, y la caja es lo que fija la proporción. El Compadre llegó con 2 px en su
 columna izquierda y las seis siguientes vacías: su proporción salía 0,993 en vez de
 0,831.
+
+**El encuadre del rostro se verifica a ojo, no hay comprobación automática.** Se
+probaron dos métricas —piel al centro del recorte y piel pegada al borde de arriba— y
+**ninguna separa** un recorte bien puesto de uno con la cara fuera de cuadro (23,3 %
+el malo contra 22,6 % el bueno). Lo que sí se comprueba es que el rostro **corresponda
+al cuerpo actual**, regenerándolo y comparando. Cuando el detector de cara falla —a La
+Primera le puso el centro en el 34 % del ancho cuando estaba en el 51 %— se ancla a
+mano en `herramientas/ajuste.json`: `[alto, subida, x opcional, y opcional]`.
 
 Cuando el fondo es blanco plano, el relleno desde el borde quita el fondo exterior,
 pero **no** las islas que quedan encerradas entre los mechones del pelo — y esas se

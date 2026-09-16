@@ -30,6 +30,7 @@ Aflojar cualquiera de las tres borra algo legitimo. Esta suite comprueba
 que ningun dibujo publicado tenga islas que cumplan las tres.
 """
 import json, os, re, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "herramientas"))
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -120,6 +121,30 @@ def main():
                f"{cid}: el rostro tiene la proporcion de la casilla", f"{f.width}x{f.height}")
             g = np.array(f.convert("L"))
             ok(g.std() > 25, f"{cid}: el rostro no esta en blanco", f"desviacion {g.std():.1f}")
+            # El rostro tiene que poder REGENERARSE del cuerpo actual. Si
+            # no coincide, quedo viejo: alguien cambio el dibujo del cuerpo
+            # y no rehizo la cara, que es como se cuelan rostros de una
+            # version anterior.
+            # (Que el encuadre sea BUENO no se puede comprobar solo: se
+            # probaron dos metricas —piel al centro y piel pegada al borde
+            # de arriba— y ninguna separa un recorte bien puesto de uno
+            # con la cara fuera de cuadro. Eso se mira, y los anclajes a
+            # mano viven en herramientas/ajuste.json.)
+            try:
+                from rostros import recorta as _rec
+                import numpy as _np
+                nuevo = _np.array(_rec(pr, cid).convert("RGB")).astype(int)
+                viejo = _np.array(f.convert("RGB")).astype(int)
+                if ok(nuevo.shape == viejo.shape, f"{cid}: su rostro tiene la medida esperada"):
+                    dif = float(_np.abs(nuevo - viejo).mean())
+                    # 18 sale de medir los dos extremos: recomprimir el
+                    # mismo recorte en WebP ya mueve la imagen hasta 10,7,
+                    # y el rostro de OTRO personaje da 43,6 como minimo.
+                    ok(dif < 18.0, f"{cid}: su rostro corresponde al cuerpo de ahora",
+                       f"diferencia media {dif:.1f} (ruido de recompresion llega a 10,7; "
+                       f"un rostro ajeno, a 43,6)")
+            except Exception as e:
+                ok(False, f"{cid}: se pudo regenerar su rostro", str(e))
             fm, ft = islas_de_fondo(fr)
             ffrac = ft / float(f.width * f.height)
             ok(ffrac < LIMITE_FRAC * 3, f"{cid}: su rostro tampoco trae fondo colado",
