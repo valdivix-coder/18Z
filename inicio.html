@@ -377,7 +377,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
     <div id="cast" aria-label="Los seis personajes en pose de pelea"></div>
     <div id="ctaGlow" aria-hidden="true"></div>
     <div id="cta"><span class="st">★</span>TOCA PARA INICIAR<span class="st">★</span></div>
-    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.4</div>
+    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.5</div>
   </div>
 
   <section id="pg-sel" aria-label="Selección de personaje">
@@ -460,32 +460,84 @@ var STAGE_W = 960, STAGE_H = 540;
    habria donde ponerlas y `armar()` avisa por consola.
    =========================================================== */
 var PERSONAJES = [
-  {id:"laprimera", nom:"La Primera", w:364, h:504, portada:1},
-  {id:"tatan",     nom:"Tatán",      w:437, h:508, portada:2},
-  {id:"lanaya",    nom:"La Naya",    w:412, h:488, portada:5},
-  {id:"kidd",      nom:"Kidd Tutú",  w:448, h:486, portada:4},
-  {id:"lamon",     nom:"La Mon",     w:413, h:515, portada:3},
-  {id:"elboris",   nom:"El Boris",   w:400, h:491, portada:0},
-  /* De aqui en adelante, solo en la grilla: la portada ya tiene sus seis
-     y un septimo ahi encogeria a todos. La altura de estos cuatro sale
-     de La Naya, que llego en el mismo lote con su alto ya fijado. */
-  {id:"donfrancis", nom:"Don Francis", w:408, h:492, portada:null},
-  {id:"eltono",    nom:"El Toño",     w:404, h:498, portada:null},
-  {id:"carter",    nom:"Mr. Carter",  w:386, h:484, portada:null},
-  {id:"felipito",  nom:"Felipito",    w:399, h:493, portada:null},
-  {id:"lamami",    nom:"La Mami",     w:343, h:485, portada:null},
-  {id:"soajanet",  nom:"La Soa Janet",w:362, h:488, portada:null},
-  {id:"tiaevelyn", nom:"La Tía Evelyn",w:292, h:497, portada:null},
-  {id:"papurri",   nom:"El Papurri",  w:368, h:500, portada:null},
-  {id:"compadre",  nom:"El Compadre", w:409, h:493, portada:null}
+  {id:"laprimera",  nom:"La Primera",   w:373, h:504, sexo:"m"},
+  {id:"tatan",      nom:"Tatán",        w:437, h:508, sexo:"h"},
+  {id:"lanaya",     nom:"La Naya",      w:412, h:488, sexo:"m"},
+  {id:"kidd",       nom:"Kidd Tutú",    w:448, h:486, sexo:"h"},
+  {id:"lamon",      nom:"La Mon",       w:418, h:515, sexo:"m"},
+  {id:"elboris",    nom:"El Boris",     w:400, h:491, sexo:"h"},
+  {id:"donfrancis", nom:"Don Francis",  w:408, h:492, sexo:"h"},
+  {id:"eltono",     nom:"El Toño",      w:404, h:498, sexo:"h"},
+  {id:"carter",     nom:"Mr. Carter",   w:386, h:484, sexo:"h"},
+  {id:"felipito",   nom:"Felipito",     w:399, h:493, sexo:"h"},
+  {id:"lamami",     nom:"La Mami",      w:343, h:485, sexo:"m"},
+  {id:"soajanet",   nom:"La Soa Janet", w:362, h:488, sexo:"m"},
+  {id:"tiaevelyn",  nom:"La Tía Evelyn",w:292, h:497, sexo:"m"},
+  {id:"papurri",    nom:"El Papurri",   w:382, h:500, sexo:"h"},
+  {id:"compadre",   nom:"El Compadre",  w:410, h:493, sexo:"h"}
 ];
-/* Quienes salen en la portada, en su orden, DERIVADO de la lista de
-   arriba. Con dos listas paralelas, sumar a alguien en una y olvidarlo
-   en la otra es solo cuestion de tiempo. */
-var CAST = PERSONAJES.filter(function(p){ return p.portada !== null && p.portada !== undefined; })
-                     .sort(function(a, b){ return a.portada - b.portada; });
-/* Busqueda por id sobre TODOS, no solo sobre la portada: un personaje
-   de portada:null tambien necesita sus medidas para el panel derecho. */
+
+/* ===========================================================
+   LA GRILLA VA EN ORDEN ALFABETICO, siempre.
+   Se DERIVA del nombre, no del orden en que se escribio la lista de
+   arriba: asi sumar a alguien es pegar una linea donde caiga y la
+   grilla se reordena sola. `localeCompare` con locale español para que
+   Tatán y La Tía Evelyn caigan donde corresponde y no detras de la Z.
+   =========================================================== */
+var GRILLA = PERSONAJES.slice().sort(function(a, b){
+  return a.nom.localeCompare(b.nom, "es", {sensitivity:"base"});
+});
+
+/* ===========================================================
+   LA PORTADA SE SORTEA EN CADA CARGA: cinco, alternando hombre y
+   mujer, centrados.
+
+   No hay protagonista. Elegir seis fijos seria decidir quienes son los
+   importantes, y en este juego todos lo son — asi que la fila cambia
+   cada vez que se abre. Con 15 personajes hay miles de combinaciones, y
+   crecen solas a medida que entra gente nueva: no hay nada que ajustar.
+
+   Alterna h-m-h-m-h o m-h-m-h-m, eligiendo el arranque al azar entre
+   los que la composicion del reparto permita. Hoy hay 9 hombres y 6
+   mujeres, asi que los dos arranques son posibles; si algun dia no
+   alcanzan, `portadaDelDia()` cae al que si se pueda armar y, si no hay
+   ninguno, a una seleccion sin alternar antes que dejar la fila corta.
+   =========================================================== */
+var PORTADA_N = 5;
+
+function revolver(a){                       /* Fisher-Yates */
+  var i, j, t;
+  for(i = a.length - 1; i > 0; i--){
+    j = Math.floor(Math.random() * (i + 1));
+    t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function portadaDelDia(n){
+  n = n || PORTADA_N;
+  var h = revolver(PERSONAJES.filter(function(p){ return p.sexo === "h"; }));
+  var m = revolver(PERSONAJES.filter(function(p){ return p.sexo === "m"; }));
+  /* cuantos hacen falta de cada uno segun con quien se empiece */
+  function alcanza(primero){
+    var a = primero === "h" ? h : m, b = primero === "h" ? m : h;
+    return a.length >= Math.ceil(n/2) && b.length >= Math.floor(n/2);
+  }
+  var puede = ["h", "m"].filter(alcanza);
+  if(!puede.length){
+    /* el reparto no da para alternar: mejor cinco sin alternar que una
+       fila corta, y la portada nunca se queda a medias */
+    return revolver(PERSONAJES.slice()).slice(0, Math.min(n, PERSONAJES.length));
+  }
+  var primero = puede[Math.floor(Math.random() * puede.length)];
+  var a = primero === "h" ? h : m, b = primero === "h" ? m : h, fila = [], i;
+  for(i = 0; i < n; i++) fila.push(i % 2 === 0 ? a[i >> 1] : b[i >> 1]);
+  return fila;
+}
+
+var CAST = portadaDelDia();
+/* Busqueda por id sobre TODOS, no solo sobre la portada: quien no salga
+   hoy en la fila igual necesita sus medidas para el panel derecho. */
 var POR_ID = {};
 PERSONAJES.forEach(function(p){ POR_ID[p.id] = p; });
 
@@ -519,16 +571,24 @@ var FEET = 474;
   box.appendChild(frag);
 })();
 
+/* El mas alto de TODO el reparto. La escala se acota contra este numero
+   y no contra el mas alto de los cinco que salieron hoy: si se midiera
+   contra el subconjunto, un mismo personaje se veria de distinto tamano
+   segun con quien le toque salir, y la fila cambiaria de escala en cada
+   carga. Asi lo unico que cambia es QUIENES salen. */
+var ALTO_MAYOR = 0;
+PERSONAJES.forEach(function(p){ if(p.h > ALTO_MAYOR) ALTO_MAYOR = p.h; });
+var ALTO_EN_PANTALLA = 234;                 /* lo que mide el mas alto */
+
 function layout(){
   var W = STAGE_W, M = 24, G = 9, n = CAST.length, i;
   var sumW = 0; for(i=0;i<n;i++) sumW += CAST[i].w;
-  /* una sola escala para los seis: entran completos y sin pisarse */
+  /* una sola escala para los cinco: entran completos y sin pisarse */
   var k = (W - 2*M - G*(n-1)) / sumW;
-  k = Math.min(k, 234/515);   /* 234 px de alto el mas alto del reparto */
-  var total = sumW*k + G*(n-1), x = (W - total)/2, maxH = 0;
+  k = Math.min(k, ALTO_EN_PANTALLA / ALTO_MAYOR);
+  var total = sumW*k + G*(n-1), x = (W - total)/2;
   for(i=0;i<n;i++){
     var c = CAST[i], w = c.w*k, h = c.h*k;
-    if(h > maxH) maxH = h;
     var f = $("fig-"+c.id);
     f.style.cssText += ";left:"+Math.round(x)+"px;top:"+Math.round(FEET-h)+
                        "px;width:"+Math.round(w)+"px;height:"+Math.round(h)+"px";
@@ -546,7 +606,10 @@ function layout(){
   gl.style.cssText += ";top:" + (yCta + 3) + "px;width:" + Math.round(cta.offsetWidth * 0.95) +
                       "px;height:" + Math.max(12, cta.offsetHeight - 10) + "px";
 
-  var tops = FEET - maxH;
+  /* El hueco del logotipo se calcula contra el techo FIJO del reparto y
+     no contra el mas alto de hoy: si no, el logotipo cambiaria de tamano
+     segun a quien le tocara salir. */
+  var tops = FEET - ALTO_EN_PANTALLA;
   var lw = Math.min(478, W*0.46), lh = lw*0.5953;
   if(lh > tops - 12){ lh = Math.max(148, tops - 12); lw = lh/0.5953; }
   var lg = $("logoWrap");
@@ -1357,13 +1420,13 @@ var SEL = (function(){
 
   function armar(){
     if(armada) return; armada = true;
-    if(PERSONAJES.length > CASILLAS && window.console)
-      console.warn("Zombies en el 18: hay " + PERSONAJES.length +
+    if(GRILLA.length > CASILLAS && window.console)
+      console.warn("Zombies en el 18: hay " + GRILLA.length +
                    " personajes y solo " + CASILLAS + " casillas.");
     var n = 0;
     for(var r = 0; r < ROWY.length; r++){
       for(var c = 0; c < COLX.length; c++, n++){
-        var quien = PERSONAJES[n] || null;
+        var quien = GRILLA[n] || null;
         var b = document.createElement("button");
         b.className = "slot " + (quien ? "free" : "lock");
         b.type = "button";

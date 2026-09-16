@@ -14,11 +14,12 @@ personaje con su dibujo es innegociable**.
 - **Hecho:** pantalla de inicio (intro en video + coreografía de entrada + ambiente
   sintetizado) y pantalla de **selección de personaje** (cortina metálica, grilla de
   30 casillas, panel PLAYER 1 con el personaje en reposo de pelea, CONTINUAR).
-- **Reparto: 15 personajes.** Seis en la portada, quince en la grilla.
+- **Reparto: 15 personajes.** La grilla los muestra a todos en orden alfabético; la
+  portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 9 suites, ~510 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 9 suites, ~620 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
-- Versión publicada: **v1.4** (se ve al pie de la pantalla de inicio).
+- Versión publicada: **v1.5** (se ve al pie de la pantalla de inicio).
 
 ## Regla no negociable
 **El arnés vive DENTRO del repositorio.** Nada que sirva para verificar el juego
@@ -34,15 +35,35 @@ por buena, rómpela a propósito y comprueba que cae.
 la grilla, el rótulo en mayúsculas, la escala del panel y la precarga.
 
 ```js
-{id:"tatan", nom:"Tatán", w:437, h:508, portada:2}
+{id:"tatan", nom:"Tatán", w:437, h:508, sexo:"h"}
 ```
 - `id` → sus dos archivos: `assets/p-<id>.webp` (cuerpo entero, recortado al píxel) y
   `assets/f-<id>.webp` (rostro, proporción 135×82).
 - `w,h` → las medidas del dibujo. De ahí sale la **escala compartida**, en la portada
   y en el panel: por eso las diferencias de estatura son las de verdad y no las de
   encajar a cada uno en su caja.
-- `portada` → su puesto en la fila de inicio, o `null` si solo va en la grilla.
-  **En la portada caben SEIS**; un séptimo encoge a todos.
+- `sexo` → `"h"` o `"m"`. Lo usa la alternancia de la portada, nada más.
+
+**El orden de la lista no significa nada.** La grilla se ordena sola por nombre
+(`GRILLA`, con `localeCompare` en español para que Tatán y La Tía Evelyn caigan donde
+corresponde) y la portada se sortea (`portadaDelDia()`). Se puede pegar una línea
+nueva donde caiga.
+
+## La portada no tiene protagonista
+Cada carga sortea **cinco** alternando hombre y mujer, centrados, empezando al azar
+por uno u otro. Elegir unos fijos sería decidir quiénes son los importantes, y aquí
+todos lo son. Con 15 hay miles de combinaciones y crecen solas: no hay nada que
+ajustar al sumar gente.
+
+**La escala se mide contra el techo FIJO del reparto** (`ALTO_MAYOR`), no contra el
+más alto de los cinco de hoy. Si se midiera contra el subconjunto, un mismo personaje
+se vería de distinto tamaño según la compañía y el logotipo cambiaría de porte en cada
+carga. Lo único que cambia es **quiénes** salen. `test-portada.py` lo comprueba
+recargando doce veces y exigiendo que cada personaje mida siempre lo mismo.
+
+Un efecto secundario conocido: con 9 hombres y 6 mujeres, una mujer sale ~1,9 veces
+más seguido que un hombre — no es un fallo sino la consecuencia de exigir alternancia
+con un reparto desparejo. Se empareja solo a medida que el reparto se equilibra.
 
 **Sumar a alguien es un comando y una línea:**
 ```bash
@@ -57,7 +78,19 @@ los seis estaban a una escala. Factor `488/1182 = 0,4129`, válido mientras los 
 sigan llegando con este encuadre (tinta de ~1170 a 1210 px de alto).
 
 ## El recorte del fondo blanco, y sus tres condiciones
-Los dibujos llegan sobre blanco. El relleno desde el borde quita el fondo exterior,
+`herramientas/recortar.py` reconoce **tres** entradas y elige sola: fondo blanco
+plano, fondo ya transparente, y **damero incrustado** — un PNG sin canal alfa donde el
+damero de "transparente" quedó pintado. El tercero llega cuando el archivo se exporta
+por el camino equivocado y es el peor de los tres: no se ve como fondo hasta ponerlo
+sobre oscuro. Se reconoce por neutralidad y se desmatiza contra el gris **local**,
+porque el damero baja hasta 219 y contra 255 el borde sale aclarado.
+
+También limpia **motas sueltas**: píxeles aislados que no se ven pero estiran la caja
+de recorte, y la caja es lo que fija la proporción. El Compadre llegó con 2 px en su
+columna izquierda y las seis siguientes vacías: su proporción salía 0,993 en vez de
+0,831.
+
+Cuando el fondo es blanco plano, el relleno desde el borde quita el fondo exterior,
 pero **no** las islas que quedan encerradas entre los mechones del pelo — y esas se
 leían como tajos blancos sobre el fondo oscuro del juego.
 

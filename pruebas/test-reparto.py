@@ -75,16 +75,48 @@ async def main():
                 ok(abs(m[0]/m[1] - 135/82) < 0.03, f"{p['nom']}: el rostro tiene la proporcion de la casilla",
                    f"{m[0]}x{m[1]} = {m[0]/m[1]:.3f}")
 
-        # --- la portada se DERIVA, no se escribe aparte ---
-        port = await pg.evaluate("CAST.map(c=>c.id)")
-        esperada = [p["id"] for p in sorted([q for q in rep if q["portada"] is not None],
-                                            key=lambda q: q["portada"])]
-        ok(port == esperada, "la portada se deriva de portada!=null y en su orden",
-           f"{port} vs {esperada}")
-        ok(len(port) == 6, "la portada tiene exactamente seis", len(port))
-        puestos = [p["portada"] for p in rep if p["portada"] is not None]
-        ok(sorted(puestos) == list(range(len(puestos))),
-           "los puestos de portada son 0..n sin huecos ni repetidos", sorted(puestos))
+        # --- cada personaje declara su sexo: de ahi sale la alternancia ---
+        ok(all(p["sexo"] in ("h", "m") for p in rep),
+           "todos declaran su sexo", [p["id"] for p in rep if p["sexo"] not in ("h", "m")])
+        hs = [p for p in rep if p["sexo"] == "h"]; ms = [p for p in rep if p["sexo"] == "m"]
+        ayuda.nota(f"reparto: {len(hs)} hombres, {len(ms)} mujeres")
+        n = await pg.evaluate("PORTADA_N")
+        ok(len(hs) >= -(-n // 2) and len(ms) >= n // 2,
+           "el reparto da para alternar empezando por cualquiera de los dos",
+           f"{len(hs)}h / {len(ms)}m para filas de {n}")
+
+        # --- la GRILLA va en orden alfabetico, y se DERIVA ---
+        gr = [p["nom"] for p in await ayuda.grilla(pg)]
+        esp = sorted(gr, key=lambda x: __import__("locale").strxfrm(x))
+        ok(len(gr) == len(rep), "la grilla trae a todo el reparto", f"{len(gr)} vs {len(rep)}")
+        ok(set(gr) == {p["nom"] for p in rep}, "y a los mismos, sin inventar ni perder")
+        orden_js = await pg.evaluate("""(()=>{
+          const a=GRILLA.map(p=>p.nom);
+          const b=a.slice().sort((x,y)=>x.localeCompare(y,'es',{sensitivity:'base'}));
+          return a.join('|')===b.join('|');
+        })()""")
+        ok(orden_js, "la grilla esta en orden alfabetico", gr)
+
+        # --- el sorteo de la portada cumple sus reglas, 200 veces ---
+        pr = await pg.evaluate("""(()=>{
+          const out=[]; for(let i=0;i<200;i++){const c=portadaDelDia();
+            out.push({n:c.length, s:c.map(p=>p.sexo).join(''),
+                      ids:c.map(p=>p.id).join(','), unicos:new Set(c.map(p=>p.id)).size});}
+          return out;})()""")
+        ok(all(x["n"] == n for x in pr), f"todo sorteo trae {n}",
+           sorted({x["n"] for x in pr}))
+        ok(all(x["unicos"] == n for x in pr), "ningun sorteo repite personaje")
+        ok(all(all(x["s"][i] != x["s"][i+1] for i in range(len(x["s"])-1)) for x in pr),
+           "todo sorteo alterna hombre y mujer",
+           sorted({x["s"] for x in pr})[:4])
+        ok(len({x["ids"] for x in pr}) > 150, "los sorteos son variados",
+           f"{len({x['ids'] for x in pr})} filas distintas en 200")
+        salen = set()
+        for x in pr: salen.update(x["ids"].split(","))
+        ok(len(salen) == len(rep), "con el tiempo salen TODOS: no hay protagonista fijo",
+           f"{len(salen)}/{len(rep)}")
+        patr = {x["s"] for x in pr}
+        ok(len(patr) == 2, "se usan los dos arranques, no siempre el mismo", patr)
 
         # --- el nombre vive UNA vez: la grilla lo pone en mayusculas sola ---
         fuente = open(ayuda.JUEGO, encoding="utf-8").read()

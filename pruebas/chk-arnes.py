@@ -100,9 +100,13 @@ def main():
         seguidos = set(r.stdout.split())
         for s in en_disco + ["correr-todo.py", "ayuda.py", "README.md"]:
             ok(f"pruebas/{s}" in seguidos, f"pruebas/{s} esta en git")
-        for t in sorted(f for f in os.listdir(os.path.join(RAIZ, "herramientas"))
-                        if not f.startswith("__")):
-            ok(f"herramientas/{t}" in seguidos, f"herramientas/{t} esta en git")
+        # recorriendo el arbol: las herramientas tienen subcarpeta
+        for base, _, files in os.walk(os.path.join(RAIZ, "herramientas")):
+            if "__pycache__" in base:
+                continue
+            for t in sorted(files):
+                rel = os.path.relpath(os.path.join(base, t), RAIZ).replace(os.sep, "/")
+                ok(rel in seguidos, f"{rel} esta en git")
         ok("inicio.html" in seguidos, "el juego esta en git")
         ok(any(x.startswith("assets/p-") for x in seguidos), "los dibujos estan en git")
         ok("CLAUDE.md" in seguidos, "el contexto para la proxima sesion esta en git")

@@ -19,7 +19,7 @@ async def main():
     async with async_playwright() as pw:
         b, pg, errores, malas = await ayuda.abrir(pw)
         await ayuda.al_titulo(pg)
-        rep = await ayuda.reparto(pg)
+        rep = await ayuda.grilla(pg)   # la grilla va alfabetica, no en el orden de la lista
 
         # el panel del jugador NO forma parte de la cortina: tiene que
         # verse desde el primer cuadro (es un requisito de diseno explicito)

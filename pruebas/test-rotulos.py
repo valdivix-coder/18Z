@@ -33,7 +33,7 @@ async def main():
         b, pg, errores, malas = await ayuda.abrir(pw)
         await ayuda.al_titulo(pg)
         await ayuda.a_seleccion(pg)
-        rep = await ayuda.reparto(pg)
+        rep = await ayuda.grilla(pg)
         filas = await medir(pg)
         ok(len(filas) == len(rep), "hay un rotulo por personaje", f"{len(filas)} vs {len(rep)}")
         for f in filas:
@@ -57,7 +57,9 @@ async def main():
         # Ningun nombre actual lo ejercita, asi que sin esto ese camino no
         # estaria probado hasta que alguien lo estrene en produccion.
         b, pg, errores, _ = await ayuda.abrir(pw)
-        await pg.evaluate("PERSONAJES.slice(0,%d).forEach((p,i)=>{p.nom=%s[i];})"
+        # sobre GRILLA: son los MISMOS objetos, pero en el orden en que se
+        # pintan las casillas, asi las tres primeras placas son estas
+        await pg.evaluate("GRILLA.slice(0,%d).forEach((p,i)=>{p.nom=%s[i];})"
                           % (len(LARGOS), str(LARGOS)))
         await ayuda.al_titulo(pg)
         await ayuda.a_seleccion(pg)

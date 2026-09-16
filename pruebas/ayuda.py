@@ -53,6 +53,14 @@ class _H(http.server.SimpleHTTPRequestHandler):
         return "text/html; charset=utf-8" if t == "text/html" else t
     def log_message(self, *a):
         pass
+    def handle_one_request(self):
+        # Cerrar el navegador a mitad de una descarga rompe la tuberia y
+        # el hilo del servidor escupe un rastro que no es un fallo de
+        # nada. Se traga aqui para que la salida de las suites sea legible.
+        try:
+            super().handle_one_request()
+        except (BrokenPipeError, ConnectionResetError):
+            self.close_connection = True
 
 def servidor():
     """Levanta el juego en un puerto libre. Uno por proceso, asi que las
@@ -121,5 +129,13 @@ async def tocar_casilla(pg, i):
         ".dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))")
 
 async def reparto(pg):
-    """La lista de personajes tal como la ve el juego."""
-    return await pg.evaluate("PERSONAJES.map(p=>({id:p.id,nom:p.nom,w:p.w,h:p.h,portada:p.portada}))")
+    """El reparto completo, tal como lo ve el juego."""
+    return await pg.evaluate("PERSONAJES.map(p=>({id:p.id,nom:p.nom,w:p.w,h:p.h,sexo:p.sexo}))")
+
+async def grilla(pg):
+    """El orden de la GRILLA, que es alfabetico y no el de la lista."""
+    return await pg.evaluate("GRILLA.map(p=>({id:p.id,nom:p.nom,w:p.w,h:p.h,sexo:p.sexo}))")
+
+async def portada(pg):
+    """Los cinco que salieron sorteados en la pantalla de inicio."""
+    return await pg.evaluate("CAST.map(p=>({id:p.id,nom:p.nom,sexo:p.sexo}))")
