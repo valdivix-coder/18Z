@@ -2,12 +2,27 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Zombies en el 18</title>
-  <meta http-equiv="refresh" content="0; url=/inicio.html">
-  <script>location.replace('/inicio.html');</script>
+  <meta name="theme-color" content="#120a10">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="18Z">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/webp" sizes="192x192" href="/icons/icon-192.webp">
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
+    #game{display:block;border:0;width:100%;height:100%;background:#000}
+  </style>
 </head>
 <body>
-  <p>Abriendo <a href="/inicio.html">Zombies en el 18</a>…</p>
+  <iframe id="game" src="/inicio.html" title="Zombies en el 18" allow="autoplay; fullscreen" allowfullscreen></iframe>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>
