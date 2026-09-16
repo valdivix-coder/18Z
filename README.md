@@ -26,3 +26,10 @@ cd pruebas && python3 correr-todo.py
 ```bash
 cd pruebas && python3 correr-todo.py
 ```
+
+## Publicar en Vercel
+
+El juego vive en `inicio.html`, así que `vercel.json` reescribe `/` hacia él
+para que la raíz del sitio sirva el juego. Los `assets/` van con caché de una
+semana —sus nombres no cambian de contenido— y el HTML con `no-cache`, para
+que al publicar una versión nueva el teléfono la vea sin trucos.
