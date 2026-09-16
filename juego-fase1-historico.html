@@ -1,0 +1,879 @@
+<title>Zombies en el 18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Pixelify+Sans:wght@400;600;700&display=swap">
+<style>
+/* ===================================================================
+   ZOMBIES EN EL 18 — cabina arcade
+   Paleta: acero azul de gabinete, verde tóxico y rojo del logotipo,
+   oro sólo para lo que se puede tocar.
+   =================================================================== */
+:root{
+  --ink:#05070e;          /* negro de contorno */
+  --steel:#0e1a33;        /* chapa del gabinete */
+  --steel-2:#16294e;      /* chapa iluminada */
+  --arcade:#1f5fe0;       /* azul de las fichas */
+  --arcade-2:#3d86ff;
+  --toxic:#6fd12b;        /* verde del logotipo */
+  --blood:#d8232a;        /* rojo del logotipo */
+  --gold:#ffc233;         /* selección y acción */
+  --bone:#eaf0ff;         /* texto */
+  --dim:#8fa3cc;          /* texto secundario */
+  --stage-w:960px;
+  --stage-h:540px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);overflow:hidden}
+body{
+  font-family:"Pixelify Sans","Trebuchet MS",system-ui,sans-serif;
+  color:var(--bone);
+  -webkit-font-smoothing:none;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+}
+img{max-width:100%}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+
+/* ---------- telón de fondo que llena cualquier pantalla ---------- */
+#backdrop{
+  position:fixed;inset:-4%;
+  background:#0a0f1e center/cover no-repeat;
+  filter:blur(26px) saturate(.65) brightness(.32);
+  transform:scale(1.06);
+  transition:background-image .4s;
+}
+
+/* ---------- escenario fijo 960x540, escalado a la pantalla ---------- */
+#stage{
+  position:fixed;left:50%;top:50%;
+  width:var(--stage-w);height:var(--stage-h);
+  transform-origin:50% 50%;
+  transform:translate(-50%,-50%);
+  background:var(--ink);
+  overflow:hidden;
+  box-shadow:0 0 0 2px #000, 0 0 60px rgba(0,0,0,.9), 0 0 120px rgba(31,95,224,.18);
+}
+.screen{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .28s ease}
+.screen.on{opacity:1;visibility:visible}
+
+/* ---------- CRT: líneas de barrido + viñeta, encima de todo ---------- */
+#crt{position:fixed;inset:0;pointer-events:none;z-index:60}
+#crt::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply;opacity:.55;
+}
+#crt::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 78% 68% at 50% 48%,transparent 42%,rgba(0,0,0,.72) 100%);
+}
+
+/* =================== PANTALLA DE INICIO =================== */
+#pg-start{background:#0a0f1e}
+#startArt{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;image-rendering:pixelated;
+  animation:breathe 22s ease-in-out infinite alternate;
+}
+@keyframes breathe{from{transform:scale(1.005)}to{transform:scale(1.045)}}
+#embers{position:absolute;inset:0;width:100%;height:100%}
+/* resplandor del fuego, por encima del arte */
+#pg-start .heat{
+  position:absolute;left:0;right:0;bottom:0;height:62%;
+  background:radial-gradient(ellipse 70% 100% at 50% 118%,rgba(255,130,30,.30),transparent 68%);
+  mix-blend-mode:screen;animation:heat 3.1s ease-in-out infinite alternate;pointer-events:none;
+}
+@keyframes heat{from{opacity:.45}to{opacity:.95}}
+/* el botón "TOCA PARA INICIAR" viene pintado en el arte: aquí sólo se enciende */
+#startHit{
+  position:absolute;left:327px;top:452px;width:306px;height:50px;
+  border-radius:6px;
+  box-shadow:0 0 0 2px rgba(255,194,51,.85),0 0 26px 6px rgba(255,140,40,.55),inset 0 0 22px rgba(255,194,51,.35);
+  animation:pulseBtn 1.15s ease-in-out infinite;pointer-events:none;
+}
+@keyframes pulseBtn{0%,100%{opacity:.30;transform:scale(.995)}50%{opacity:1;transform:scale(1.02)}}
+#pg-start .credits{
+  position:absolute;left:12px;bottom:10px;
+  font-size:10px;letter-spacing:.14em;color:#ffd98a;
+  text-shadow:0 2px 0 #000,0 0 12px rgba(255,150,40,.6);
+}
+#pg-start .credits b{color:var(--toxic)}
+#pg-start .blink{animation:blink 1.05s steps(1,end) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* =================== PANTALLA DE SELECCIÓN =================== */
+#pg-select{background:#070c18}
+#selArt{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  image-rendering:pixelated;opacity:.34;
+  filter:saturate(.5) brightness(.42) hue-rotate(-8deg);
+}
+#pg-select .grade{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(6,11,26,.97) 0 12%,rgba(7,12,28,.82) 34%,rgba(8,14,32,.94)),
+    radial-gradient(ellipse 60% 50% at 78% 45%,rgba(31,95,224,.28),transparent 70%);
+}
+#selLayout{position:absolute;inset:0;display:flex;flex-direction:column;padding:10px 12px 12px;gap:8px}
+
+/* --- cabecera --- */
+.hdr{display:flex;align-items:center;gap:14px;height:52px;flex:0 0 auto}
+.hdr h1{
+  margin:0;font-family:Bungee,Impact,sans-serif;font-size:25px;line-height:1;
+  letter-spacing:.01em;color:#fff;
+  text-shadow:0 2px 0 #0b1226,0 4px 0 #060a16,2px 0 0 #0b1226,-2px 0 0 #0b1226,0 0 22px rgba(63,140,255,.75);
+}
+.hdr .sub{
+  font-size:11px;letter-spacing:.24em;color:var(--toxic);margin-top:5px;
+  text-shadow:0 0 10px rgba(111,209,43,.5);
+}
+.hdr .spacer{flex:1}
+.hdr img{height:50px;width:auto;filter:drop-shadow(0 3px 0 rgba(0,0,0,.85))}
+
+/* --- cuerpo --- */
+.body{flex:1;display:flex;gap:10px;min-height:0;justify-content:center}
+
+/* chapa remachada reutilizable */
+.plate{
+  position:relative;border-radius:10px;
+  background:
+    linear-gradient(180deg,var(--steel-2),var(--steel) 55%,#0a1428),
+    repeating-linear-gradient(135deg,rgba(255,255,255,.028) 0 2px,transparent 2px 5px);
+  border:2px solid #061024;
+  box-shadow:
+    inset 0 1px 0 rgba(120,170,255,.38),
+    inset 0 0 0 2px rgba(31,95,224,.28),
+    inset 0 -14px 26px rgba(0,0,0,.55),
+    0 5px 0 #040a16, 0 10px 22px rgba(0,0,0,.6);
+}
+.plate::before,.plate::after{
+  content:"";position:absolute;width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#9db8e8,#33507f 45%,#0b1730 75%);
+  box-shadow:0 1px 0 rgba(255,255,255,.18),inset 0 -1px 1px rgba(0,0,0,.6);
+}
+.plate::before{left:7px;top:7px}
+.plate::after{right:7px;top:7px}
+
+/* --- rejilla del reparto --- */
+#rosterPlate{flex:0 1 auto;min-width:0;padding:11px;display:flex}
+#roster{
+  display:grid;grid-template-columns:repeat(6,var(--tw,92px));
+  gap:6px;height:100%;margin:auto;
+}
+.slot{
+  position:relative;display:flex;flex-direction:column;
+  border-radius:7px;overflow:hidden;padding:0;
+  background:linear-gradient(180deg,#2a6bf0,#154bbd 60%,#0f3a96);
+  border:2px solid #081633;
+  box-shadow:inset 0 1px 0 rgba(160,200,255,.6),inset 0 -6px 12px rgba(0,0,0,.42),0 2px 0 #050d1e;
+  transition:transform .12s ease, box-shadow .12s ease, filter .18s ease;
+}
+.slot .face{
+  flex:1;min-height:0;
+  background-image:url("assets/roster-atlas.png");
+  background-repeat:no-repeat;
+  image-rendering:pixelated;
+}
+.slot .nm.long{font-size:7.8px;letter-spacing:-.02em}
+.slot .nm{
+  flex:0 0 19px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;letter-spacing:.01em;line-height:1.45;
+  padding:0 2px;
+  color:#eaf2ff;text-shadow:0 1px 0 #00061a;
+  background:linear-gradient(180deg,#1b56c9,#0d3178);
+  border-top:1px solid rgba(140,185,255,.35);
+  white-space:nowrap;overflow:hidden;
+}
+/* bloqueados: apagados, con candado */
+.slot.locked{filter:grayscale(.82) brightness(.5) contrast(.92)}
+.slot.locked .lock{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:17px;color:#cfe0ff;text-shadow:0 2px 3px #000;opacity:.92;
+}
+.slot.locked .nm{color:#a8b9d8}
+.slot.free{cursor:pointer}
+.slot.free:active{transform:translateY(2px) scale(.97)}
+.slot.free::after{
+  content:"";position:absolute;inset:0;border-radius:5px;
+  box-shadow:inset 0 0 0 2px rgba(111,209,43,.55);
+  opacity:0;transition:opacity .2s;
+}
+.slot.free:hover::after{opacity:1}
+/* seleccionado: pinzas doradas */
+.slot.sel{
+  transform:translateY(-2px) scale(1.04);z-index:3;
+  filter:none;
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 20px 4px rgba(255,194,51,.6),
+    inset 0 1px 0 rgba(200,225,255,.7),
+    0 6px 0 #050d1e;
+}
+.slot.sel .nm{background:linear-gradient(180deg,#ffd463,#e8a017);color:#2a1600;text-shadow:none}
+.slot.sel .clamp{position:absolute;inset:-4px;pointer-events:none}
+.slot.sel .clamp i{
+  position:absolute;width:11px;height:11px;border:3px solid var(--gold);
+  filter:drop-shadow(0 0 5px rgba(255,194,51,.95));
+  animation:clamp .7s ease-in-out infinite alternate;
+}
+.slot.sel .clamp i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}
+.slot.sel .clamp i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+.slot.sel .clamp i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}
+.slot.sel .clamp i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
+@keyframes clamp{from{opacity:.55;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+.slot.shake{animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+
+/* --- panel del jugador --- */
+#playerPlate{
+  flex:0 0 clamp(296px,31%,372px);display:flex;flex-direction:column;gap:7px;padding:9px;
+}
+.p1bar{
+  flex:0 0 30px;display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  font-family:Bungee,Impact,sans-serif;font-size:15px;letter-spacing:.16em;color:#fff;
+  background:linear-gradient(180deg,#2a6bf0,#12409f);
+  border:2px solid #061024;
+  box-shadow:inset 0 1px 0 rgba(170,210,255,.7),inset 0 -6px 12px rgba(0,0,0,.45);
+  text-shadow:0 2px 0 #08183a,0 0 14px rgba(120,180,255,.9);
+}
+/* monitor interior donde pelea el personaje */
+.monitor{
+  flex:1;position:relative;border-radius:7px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%,rgba(60,110,210,.42),transparent 70%),
+    linear-gradient(180deg,#16233f,#0b1428 60%,#070d1c);
+  border:2px solid #061024;
+  box-shadow:inset 0 0 0 2px rgba(31,95,224,.3),inset 0 0 44px rgba(0,0,0,.8);
+}
+.monitor .flag{
+  position:absolute;left:-6%;right:-6%;top:14%;height:40%;
+  background:linear-gradient(180deg,#2a55c8 0 34%,#e8edf8 34% 67%,#c8202a 67% 100%);
+  opacity:.16;transform:rotate(-7deg);filter:blur(1px);
+}
+.monitor .floor{
+  position:absolute;left:0;right:0;bottom:0;height:22%;
+  background:linear-gradient(180deg,transparent,rgba(31,95,224,.22) 40%,rgba(8,14,32,.9));
+}
+.monitor .grid{
+  position:absolute;left:0;right:0;bottom:0;height:22%;
+  background-image:linear-gradient(rgba(111,209,43,.16) 1px,transparent 1px);
+  background-size:100% 7px;opacity:.7;
+}
+/* pie de sombra */
+#shadow{
+  position:absolute;left:50%;bottom:9%;width:132px;height:17px;
+  transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse,rgba(0,0,0,.72),transparent 70%);
+  animation:shadowIdle .9s ease-in-out infinite alternate;
+}
+@keyframes shadowIdle{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(.93)}}
+/* el luchador: dos capas del mismo dibujo, partidas por la cintura */
+#fighter{
+  position:absolute;left:50%;bottom:10%;
+  transform:translateX(-50%);
+  width:var(--fw,190px);height:var(--fh,258px);
+}
+#fighter div{
+  position:absolute;inset:0;
+  background-repeat:no-repeat;background-position:center;background-size:100% 100%;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 0 7px rgba(0,0,0,.65));
+}
+#fTorso{
+  clip-path:inset(0 0 calc(100% - var(--waist,62%)) 0);
+  transform-origin:50% var(--waist,62%);
+  animation:idleTorso .92s ease-in-out infinite;
+}
+#fLegs{
+  clip-path:inset(var(--waist,62%) 0 0 0);
+  transform-origin:50% 100%;
+  animation:idleLegs .92s ease-in-out infinite;
+}
+@keyframes idleTorso{
+  0%{transform:translateY(0) rotate(-.7deg)}
+  28%{transform:translateY(-4px) rotate(.5deg)}
+  55%{transform:translateY(-1px) rotate(.9deg)}
+  78%{transform:translateY(-3px) rotate(-.2deg)}
+  100%{transform:translateY(0) rotate(-.7deg)}
+}
+@keyframes idleLegs{
+  0%,100%{transform:scaleY(1) scaleX(1)}
+  50%{transform:scaleY(.985) scaleX(1.012)}
+}
+#fighter.enter{animation:fEnter .32s cubic-bezier(.2,1.4,.4,1)}
+@keyframes fEnter{from{opacity:0;transform:translateX(-50%) translateY(14px) scale(.9)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+/* estado vacío del monitor */
+.monitor .empty{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:9px;text-align:center;padding:0 22px;
+}
+.monitor .empty .q{
+  font-family:Bungee,Impact,sans-serif;font-size:60px;color:#294878;
+  text-shadow:0 3px 0 #0a1428,0 0 26px rgba(63,140,255,.35);
+  animation:qFloat 2.4s ease-in-out infinite alternate;
+}
+@keyframes qFloat{from{transform:translateY(-3px)}to{transform:translateY(4px)}}
+.monitor .empty p{margin:0;font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.05em}
+/* placa del nombre */
+.nameplate{
+  flex:0 0 38px;display:flex;align-items:center;justify-content:center;
+  border-radius:6px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#14284f,#0a1734);
+  border:2px solid #061024;
+  box-shadow:inset 0 1px 0 rgba(140,185,255,.32),inset 0 -6px 12px rgba(0,0,0,.5);
+}
+.nameplate span{
+  font-family:Bungee,Impact,sans-serif;font-size:19px;letter-spacing:.05em;color:#fff;
+  text-shadow:0 2px 0 #0a1c44,0 0 18px rgba(120,180,255,.85);
+  white-space:nowrap;
+}
+.nameplate span.ph{font-family:"Pixelify Sans",sans-serif;font-size:12px;letter-spacing:.2em;color:#4f6ea8;text-shadow:none}
+.nameplate.hit span{animation:nmPop .34s cubic-bezier(.2,1.5,.4,1)}
+@keyframes nmPop{0%{transform:scale(.72);filter:brightness(2.4)}100%{transform:scale(1);filter:none}}
+/* botón continuar */
+#goBtn{
+  flex:0 0 50px;border-radius:7px;position:relative;
+  font-family:Bungee,Impact,sans-serif;font-size:22px;letter-spacing:.07em;
+  color:#fff7e2;
+  background:linear-gradient(180deg,#f0464a,#c2161d 55%,#8d0e14);
+  border:2px solid #3a0508;
+  box-shadow:inset 0 2px 0 rgba(255,190,190,.55),inset 0 -8px 14px rgba(0,0,0,.45),0 5px 0 #4d070b,0 9px 16px rgba(0,0,0,.55);
+  text-shadow:0 2px 0 #6b0a0f,0 0 20px rgba(255,150,60,.75);
+  transition:transform .09s, box-shadow .09s, filter .2s;
+}
+#goBtn[disabled]{filter:grayscale(.85) brightness(.46);cursor:not-allowed;box-shadow:inset 0 2px 0 rgba(255,255,255,.12),0 4px 0 #2a0508}
+#goBtn:not([disabled]){animation:goGlow 1.25s ease-in-out infinite}
+@keyframes goGlow{0%,100%{box-shadow:inset 0 2px 0 rgba(255,190,190,.55),inset 0 -8px 14px rgba(0,0,0,.45),0 5px 0 #4d070b,0 0 0 rgba(255,140,40,0)}50%{box-shadow:inset 0 2px 0 rgba(255,190,190,.55),inset 0 -8px 14px rgba(0,0,0,.45),0 5px 0 #4d070b,0 0 26px 5px rgba(255,150,50,.6)}}
+#goBtn:not([disabled]):active{transform:translateY(5px);box-shadow:inset 0 2px 0 rgba(255,190,190,.4),0 0 0 #4d070b}
+.hint{
+  flex:0 0 15px;text-align:center;font-size:9.5px;letter-spacing:.18em;color:#6e87b8;
+}
+
+/* --- destello de transición --- */
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50}
+#flash.go{animation:flashGo .55s ease-out}
+@keyframes flashGo{0%{opacity:0}12%{opacity:.95}100%{opacity:0}}
+#shout{
+  position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);
+  font-family:Bungee,Impact,sans-serif;font-size:56px;color:var(--toxic);
+  text-shadow:0 5px 0 #0b2a05,0 0 34px rgba(111,209,43,.9),4px 0 0 #0b2a05,-4px 0 0 #0b2a05;
+  opacity:0;pointer-events:none;z-index:52;white-space:nowrap;
+}
+#shout.go{animation:shoutGo .95s cubic-bezier(.2,1.5,.35,1)}
+@keyframes shoutGo{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}32%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}}
+
+/* --- gira el teléfono --- */
+#rotate{
+  position:fixed;inset:0;z-index:80;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  background:#05070e;text-align:center;padding:24px;
+}
+#rotate.on{display:flex}
+#rotate .ph{
+  width:54px;height:88px;border:4px solid var(--toxic);border-radius:9px;
+  box-shadow:0 0 24px rgba(111,209,43,.45);animation:turn 1.9s ease-in-out infinite;
+}
+@keyframes turn{0%,38%{transform:rotate(0)}62%,100%{transform:rotate(-90deg)}}
+#rotate h2{font-family:Bungee,Impact,sans-serif;font-size:19px;margin:0;color:#fff;letter-spacing:.04em}
+#rotate p{margin:0;font-size:12px;color:var(--dim);letter-spacing:.06em}
+
+/* --- interruptor de sonido --- */
+#snd{
+  position:absolute;right:10px;bottom:8px;z-index:55;
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:rgba(8,16,36,.82);border:2px solid rgba(111,209,43,.5);color:var(--toxic);
+  box-shadow:0 2px 0 #040a16;
+}
+#snd.off{color:#6d7f9e;border-color:rgba(109,127,158,.45)}
+
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+
+<div id="backdrop"></div>
+
+<div id="stage">
+  <!-- ======================= INICIO ======================= -->
+  <section class="screen on" id="pg-start" role="button" tabindex="0" aria-label="Toca para iniciar">
+    <img id="startArt" src="assets/bg-city.webp" alt="Santiago en llamas con los personajes de Zombies en el 18 en pose de pelea">
+    <canvas id="embers" width="960" height="540" aria-hidden="true"></canvas>
+    <div class="heat" aria-hidden="true"></div>
+    <div id="startHit" aria-hidden="true"></div>
+    <div class="credits"><b>CRÉDITOS 01</b> · <span class="blink">TOCA LA PANTALLA PARA EMPEZAR</span></div>
+  </section>
+
+  <!-- ===================== SELECCIÓN ====================== -->
+  <section class="screen" id="pg-select" aria-label="Selección de personaje">
+    <img id="selArt" src="assets/bg-city.webp" alt="" aria-hidden="true">
+    <div class="grade" aria-hidden="true"></div>
+
+    <div id="selLayout">
+      <header class="hdr">
+        <div>
+          <h1>SELECCIÓN DE PERSONAJE</h1>
+          <div class="sub">ELIGE A TU LUCHADOR</div>
+        </div>
+        <div class="spacer"></div>
+        <img src="assets/logo.webp" alt="Zombies en el 18">
+      </header>
+
+      <div class="body">
+        <div class="plate" id="rosterPlate">
+          <div id="roster" role="grid" aria-label="Reparto"></div>
+        </div>
+
+        <div class="plate" id="playerPlate">
+          <div class="p1bar">PLAYER 1</div>
+          <div class="monitor">
+            <div class="flag" aria-hidden="true"></div>
+            <div class="floor" aria-hidden="true"></div>
+            <div class="grid" aria-hidden="true"></div>
+            <div class="empty" id="mEmpty">
+              <div class="q">?</div>
+              <p>Toca una cara del reparto<br>para subirla al ring.</p>
+            </div>
+            <div id="shadow" hidden aria-hidden="true"></div>
+            <div id="fighter" hidden aria-hidden="true">
+              <div id="fLegs"></div>
+              <div id="fTorso"></div>
+            </div>
+          </div>
+          <div class="nameplate" id="nameplate"><span class="ph" id="nmText">SIN SELECCIÓN</span></div>
+          <button id="goBtn" disabled>CONTINUAR</button>
+          <div class="hint" id="hint">ELIGE PARA CONTINUAR</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="flash" aria-hidden="true"></div>
+  <div id="shout" aria-hidden="true">¡VAMOS!</div>
+  <button id="snd" title="Sonido" aria-label="Activar o desactivar el sonido">♪</button>
+</div>
+
+<div id="crt" aria-hidden="true"></div>
+
+<div id="rotate" aria-hidden="true">
+  <div class="ph"></div>
+  <h2>GIRA EL TELÉFONO</h2>
+  <p>Zombies en el 18 se juega en horizontal</p>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   DATOS DEL REPARTO — el orden es el del atlas (6 x 5)
+   ============================================================ */
+var ATLAS = {w:756, h:500, cw:126, ch:100, cols:6};
+var CAST = [
+  "EL TOÑO","EL BORIS","LA MAMI","TATÁN","LA CHECHI","LA NAYA",
+  "FELIPITO","PANCHITO","RUPERT","EL EDO","KIDD TUTÚ","LA MON",
+  "DON FRANCIS","DON TOMMY","EL PAPURRI","LA SIGRI","EL KING","DON COMEDIA",
+  "EL PROFE","LA TÍA JANET","LA TÍA EVELYN","LA PRIMERA","FALSATE","FLAQUITO",
+  "EL JC","PEDRITO","CAMILITA","DON CARTER","CHOMELO","EL COMPADRE"
+];
+/* Jugables en esta fase. waist = dónde parte la cadera del dibujo,
+   que es por donde se corta el sprite para que el torso rebote solo. */
+var PLAYABLE = {
+  0:  {sprite:"assets/spr-eltono.png",   w:181, h:301, waist:"74%", shout:"¡VAMOS!"},
+  26: {sprite:"assets/spr-camilita.png", w:289, h:360, waist:"61%", shout:"¡VAMOS!"}
+};
+
+/* ============================================================
+   SONIDO — todo sintetizado, sin archivos
+   ============================================================ */
+var Snd = {
+  ctx:null, master:null, musicGain:null, on:true, playing:false, step:0, timer:null, nextT:0,
+  boot:function(){
+    if(this.ctx) { if(this.ctx.state==="suspended") this.ctx.resume(); return; }
+    var C = window.AudioContext || window.webkitAudioContext;
+    if(!C) return;
+    this.ctx = new C();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = this.on ? 0.30 : 0;
+    this.master.connect(this.ctx.destination);
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.gain.value = 0.34;
+    this.musicGain.connect(this.master);
+  },
+  tone:function(f, dur, type, vol, slideTo, delay){
+    if(!this.ctx || !this.on) return;
+    var t = this.ctx.currentTime + (delay||0);
+    var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type || "square";
+    o.frequency.setValueAtTime(f, t);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol||0.25, t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(this.master);
+    o.start(t); o.stop(t+dur+0.02);
+  },
+  noise:function(dur, vol, cut, delay){
+    if(!this.ctx || !this.on) return;
+    var t = this.ctx.currentTime + (delay||0);
+    var n = Math.floor(this.ctx.sampleRate*dur);
+    var buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for(var i=0;i<n;i++) d[i] = (Math.random()*2-1) * (1 - i/n);
+    var s = this.ctx.createBufferSource(); s.buffer = buf;
+    var f = this.ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value = cut||1800; f.Q.value=0.9;
+    var g = this.ctx.createGain(); g.gain.value = vol||0.18;
+    s.connect(f); f.connect(g); g.connect(this.master);
+    s.start(t);
+  },
+  move:function(){ this.tone(760, 0.05, "square", 0.16); },
+  pick:function(){
+    this.tone(523, 0.07, "square", 0.22);
+    this.tone(784, 0.09, "square", 0.22, null, 0.055);
+    this.tone(1046,0.14, "square", 0.20, null, 0.11);
+    this.noise(0.12, 0.10, 3200, 0.02);
+  },
+  deny:function(){
+    this.tone(150, 0.14, "sawtooth", 0.20, 96);
+    this.noise(0.10, 0.10, 420);
+  },
+  coin:function(){
+    this.tone(988, 0.07, "square", 0.24);
+    this.tone(1319,0.22, "square", 0.22, null, 0.07);
+  },
+  go:function(){
+    var n=[523,659,784,1046,1319];
+    for(var i=0;i<n.length;i++) this.tone(n[i], 0.16, "square", 0.24, null, i*0.065);
+    this.noise(0.5, 0.16, 900, 0.30);
+    this.tone(88, 0.6, "sawtooth", 0.20, 55, 0.30);
+  },
+  /* --- bucle de fondo: bajo, melodía y charles, 16 pasos --- */
+  BASS:[55,55,65.41,55, 49,49,58.27,49, 43.65,43.65,55,43.65, 49,49,61.74,73.42],
+  LEAD:[0,466.16,0,392, 0,349.23,392,0, 0,466.16,523.25,0, 587.33,0,523.25,466.16],
+  music:function(go){
+    if(!this.ctx) return;
+    if(go && !this.playing){
+      this.playing = true; this.step = 0; this.nextT = this.ctx.currentTime + 0.08;
+      var self = this;
+      this.timer = setInterval(function(){ self.pump(); }, 40);
+    } else if(!go && this.playing){
+      this.playing = false; clearInterval(this.timer); this.timer = null;
+    }
+  },
+  pump:function(){
+    if(!this.ctx || !this.on) return;
+    var spb = 60/128/2;            /* 128 bpm, corcheas */
+    while(this.nextT < this.ctx.currentTime + 0.18){
+      var t = this.nextT, s = this.step % 16;
+      var b = this.BASS[s];
+      this.blip(b, t, spb*0.9, "square", 0.17, 900);
+      var l = this.LEAD[s];
+      if(l) this.blip(l, t, spb*0.75, "square", 0.075, 3000);
+      if(s % 2 === 1) this.hat(t, 0.035);
+      if(s === 0 || s === 6 || s === 10) this.hat(t, 0.075, 520);
+      this.nextT += spb; this.step++;
+    }
+  },
+  blip:function(f,t,dur,type,vol,cut){
+    var o=this.ctx.createOscillator(), g=this.ctx.createGain(), fl=this.ctx.createBiquadFilter();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    fl.type="lowpass"; fl.frequency.value=cut;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(fl); fl.connect(g); g.connect(this.musicGain);
+    o.start(t); o.stop(t+dur+0.02);
+  },
+  hat:function(t,vol,cut){
+    var n=Math.floor(this.ctx.sampleRate*0.05);
+    var buf=this.ctx.createBuffer(1,n,this.ctx.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+    var s=this.ctx.createBufferSource(); s.buffer=buf;
+    var f=this.ctx.createBiquadFilter(); f.type= cut?"lowpass":"highpass"; f.frequency.value=cut||7000;
+    var g=this.ctx.createGain(); g.gain.value=vol;
+    s.connect(f); f.connect(g); g.connect(this.musicGain);
+    s.start(t);
+  },
+  toggle:function(){
+    this.on = !this.on;
+    if(this.master) this.master.gain.value = this.on ? 0.30 : 0;
+    return this.on;
+  }
+};
+
+/* ============================================================
+   ESCENARIO
+   ============================================================ */
+var stage = document.getElementById("stage");
+var STAGE_W = 960, STAGE_H = 540;
+var ART = {w:1672, h:940};              /* medidas del dibujo de portada */
+var BTN = {x:569, y:787, w:533, h:87};  /* el boton pintado dentro de ese dibujo */
+function placeHit(){
+  var hit = document.getElementById("startHit");
+  var sc = Math.max(STAGE_W/ART.w, STAGE_H/ART.h);
+  var ox = (STAGE_W - ART.w*sc)/2, oy = (STAGE_H - ART.h*sc)/2;
+  hit.style.left   = (ox + BTN.x*sc) + "px";
+  hit.style.top    = (oy + BTN.y*sc) + "px";
+  hit.style.width  = (BTN.w*sc) + "px";
+  hit.style.height = (BTN.h*sc) + "px";
+}
+function fit(){
+  var vw = window.innerWidth, vh = window.innerHeight;
+  STAGE_W = Math.round(Math.min(1180, Math.max(960, 540 * (vw/vh))));
+  document.documentElement.style.setProperty("--stage-w", STAGE_W + "px");
+  var s = Math.min(vw/STAGE_W, vh/STAGE_H);
+  stage.style.transform = "translate(-50%,-50%) scale(" + s + ")";
+  document.getElementById("rotate").classList.toggle("on", vh > vw * 1.02);
+  placeHit();
+  paintFaces();
+}
+window.addEventListener("resize", fit);
+window.addEventListener("orientationchange", function(){ setTimeout(fit, 120); });
+fit();
+document.getElementById("backdrop").style.backgroundImage = 'url("assets/bg-city.webp")';
+
+/* ============================================================
+   BRASAS DE LA PANTALLA DE INICIO
+   ============================================================ */
+(function(){
+  var cv = document.getElementById("embers"), cx = cv.getContext("2d");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var P = [], N = reduce ? 0 : 46;
+  for(var i=0;i<N;i++) P.push(spawn(true));
+  function spawn(any){
+    return {x:Math.random()*960, y:any?Math.random()*540:540+Math.random()*40,
+            r:0.7+Math.random()*1.9, vy:-(0.18+Math.random()*0.55),
+            vx:(Math.random()-0.5)*0.32, a:0.25+Math.random()*0.6, p:Math.random()*6.3};
+  }
+  function frame(){
+    cx.clearRect(0,0,960,540);
+    for(var i=0;i<P.length;i++){
+      var e = P[i];
+      e.y += e.vy; e.x += e.vx + Math.sin((e.p += 0.02))*0.22;
+      if(e.y < -12) P[i] = spawn(false);
+      var g = e.r > 1.5 ? "255,190,90" : "255,120,40";
+      cx.fillStyle = "rgba("+g+","+(e.a*(0.45+0.55*Math.sin(e.p*2)))+")";
+      cx.beginPath(); cx.arc(e.x, e.y, e.r, 0, 6.284); cx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  if(!reduce) frame();
+})();
+
+/* ============================================================
+   REJILLA DEL REPARTO
+   ============================================================ */
+var roster = document.getElementById("roster");
+var slots = [];
+CAST.forEach(function(name, i){
+  var free = !!PLAYABLE[i];
+  var el = document.createElement(free ? "button" : "div");
+  el.className = "slot " + (free ? "free" : "locked");
+  el.setAttribute("role","gridcell");
+  el.setAttribute("aria-label", name + (free ? "" : " — bloqueado, próximamente"));
+  if(!free) el.setAttribute("aria-disabled","true");
+  el.innerHTML =
+    '<div class="face"></div>' +
+    (free ? '<div class="clamp"><i></i><i></i><i></i><i></i></div>' : '<div class="lock">🔒</div>') +
+    '<div class="nm' + (name.length > 11 ? ' long' : '') + '">' + name + '</div>';
+  if(free) el.addEventListener("click", function(){ choose(i); });
+  else el.addEventListener("click", function(){ denied(el); });
+  roster.appendChild(el);
+  slots.push(el);
+});
+
+/* recorta cada cara del atlas: cover, centrada */
+var FACE_RATIO = 1.42;   /* proporcion elegida del recorte: cara centrada, sin estirar */
+function paintFaces(){
+  if(!slots || !slots.length) return;
+  var grid = document.getElementById("roster");
+  var gh = grid.clientHeight;
+  if(gh){
+    var rowH = (gh - 4*6) / 5;
+    var faceH = rowH - 19;
+    grid.style.setProperty("--tw", Math.max(56, Math.round(faceH * FACE_RATIO)) + "px");
+  }
+  var face = slots[0].querySelector(".face");
+  var tw = face.clientWidth, th = face.clientHeight;
+  if(!tw || !th) return;
+  var s = Math.max(tw/ATLAS.cw, th/ATLAS.ch);
+  var offX = (ATLAS.cw*s - tw)/2, offY = (ATLAS.ch*s - th)/2;
+  slots.forEach(function(el, i){
+    var c = i % ATLAS.cols, r = Math.floor(i / ATLAS.cols);
+    var f = el.querySelector(".face");
+    f.style.backgroundSize = (ATLAS.w*s) + "px " + (ATLAS.h*s) + "px";
+    f.style.backgroundPosition = (-(c*ATLAS.cw*s + offX)) + "px " + (-(r*ATLAS.ch*s + offY)) + "px";
+  });
+}
+
+/* ============================================================
+   SELECCIÓN
+   ============================================================ */
+var sel = -1;
+var fighter = document.getElementById("fighter");
+var fTorso  = document.getElementById("fTorso");
+var fLegs   = document.getElementById("fLegs");
+var shadow  = document.getElementById("shadow");
+var mEmpty  = document.getElementById("mEmpty");
+var nmText  = document.getElementById("nmText");
+var nameplate = document.getElementById("nameplate");
+var goBtn   = document.getElementById("goBtn");
+var hint    = document.getElementById("hint");
+
+function choose(i){
+  if(!PLAYABLE[i]) return;
+  if(sel === i){ Snd.move(); return; }
+  Snd.boot(); Snd.pick();
+  if(sel >= 0) slots[sel].classList.remove("sel");
+  sel = i;
+  slots[i].classList.add("sel");
+
+  var p = PLAYABLE[i];
+  /* alto fijo para que todos midan lo mismo en el monitor */
+  var H = 258, W = Math.round(p.w * H / p.h);
+  fighter.style.setProperty("--fw", W + "px");
+  fighter.style.setProperty("--fh", H + "px");
+  fighter.style.setProperty("--waist", p.waist);
+  fTorso.style.backgroundImage = 'url("' + p.sprite + '")';
+  fLegs.style.backgroundImage  = 'url("' + p.sprite + '")';
+  shadow.style.width = Math.round(W*0.72) + "px";
+
+  mEmpty.style.display = "none";
+  fighter.hidden = false; shadow.hidden = false;
+  fighter.classList.remove("enter"); void fighter.offsetWidth; fighter.classList.add("enter");
+
+  nmText.textContent = CAST[i];
+  nmText.classList.remove("ph");
+  nameplate.classList.remove("hit"); void nameplate.offsetWidth; nameplate.classList.add("hit");
+  goBtn.disabled = false;
+  hint.textContent = "PULSA CONTINUAR";
+}
+
+function denied(el){
+  Snd.boot(); Snd.deny();
+  el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+  hint.textContent = "AÚN NO DISPONIBLE";
+  clearTimeout(denied.t);
+  denied.t = setTimeout(function(){
+    hint.textContent = sel >= 0 ? "PULSA CONTINUAR" : "ELIGE PARA CONTINUAR";
+  }, 1400);
+}
+
+/* teclado: flechas + enter, para jugar también en escritorio */
+document.addEventListener("keydown", function(e){
+  if(!document.getElementById("pg-select").classList.contains("on")) {
+    if(e.key === "Enter" || e.key === " ") { e.preventDefault(); toSelect(); }
+    return;
+  }
+  var free = Object.keys(PLAYABLE).map(Number).sort(function(a,b){return a-b;});
+  if(e.key === "Enter" || e.key === " "){
+    if(sel >= 0){ e.preventDefault(); confirmPick(); }
+    return;
+  }
+  var d = {ArrowRight:1, ArrowLeft:-1, ArrowDown:6, ArrowUp:-6}[e.key];
+  if(!d) return;
+  e.preventDefault();
+  var cur = sel < 0 ? free[0] : sel, n = cur, guard = 0;
+  do {
+    n += d;
+    if(n < 0) n += 30; if(n > 29) n -= 30;
+    guard++;
+  } while(!PLAYABLE[n] && guard < 60);
+  if(PLAYABLE[n]) choose(n);
+});
+
+/* ============================================================
+   NAVEGACIÓN ENTRE PANTALLAS
+   ============================================================ */
+var pgStart = document.getElementById("pg-start"), pgSel = document.getElementById("pg-select");
+var busy = false;
+
+function show(el){
+  [pgStart, pgSel].forEach(function(p){ p.classList.toggle("on", p === el); });
+}
+function toSelect(){
+  if(busy) return; busy = true;
+  Snd.boot(); Snd.coin(); Snd.music(true);
+  document.getElementById("backdrop").style.backgroundImage = 'url("assets/bg-city.webp")';
+  flash(0.35);
+  setTimeout(function(){
+    show(pgSel);
+    requestAnimationFrame(paintFaces);
+    setTimeout(paintFaces, 60);
+    busy = false;
+  }, 190);
+}
+function toStart(){
+  if(busy) return; busy = true;
+  show(pgStart);
+  setTimeout(function(){ busy = false; }, 340);
+}
+function confirmPick(){
+  if(sel < 0 || busy) return; busy = true;
+  Snd.boot(); Snd.go();
+  var sh = document.getElementById("shout");
+  sh.textContent = PLAYABLE[sel].shout || "¡VAMOS!";
+  sh.classList.remove("go"); void sh.offsetWidth; sh.classList.add("go");
+  flash(1);
+  setTimeout(function(){
+    /* fin de la fase 1: vuelve a la portada listo para otra partida */
+    show(pgStart);
+    if(sel >= 0){ slots[sel].classList.remove("sel"); }
+    sel = -1;
+    fighter.hidden = true; shadow.hidden = true; mEmpty.style.display = "";
+    nmText.textContent = "SIN SELECCIÓN"; nmText.classList.add("ph");
+    goBtn.disabled = true; hint.textContent = "ELIGE PARA CONTINUAR";
+    busy = false;
+  }, 1050);
+}
+function flash(k){
+  var f = document.getElementById("flash");
+  f.style.opacity = "";
+  f.classList.remove("go"); void f.offsetWidth;
+  f.style.setProperty("--k", k);
+  f.classList.add("go");
+}
+
+pgStart.addEventListener("click", toSelect);
+pgStart.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toSelect(); } });
+goBtn.addEventListener("click", confirmPick);
+
+/* sonido */
+var sndBtn = document.getElementById("snd");
+sndBtn.addEventListener("click", function(e){
+  e.stopPropagation();
+  Snd.boot();
+  var on = Snd.toggle();
+  sndBtn.classList.toggle("off", !on);
+  sndBtn.textContent = on ? "♪" : "✕";
+});
+
+/* iOS: suelta el audio al salir de la app */
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden && Snd.ctx && Snd.ctx.state === "running") Snd.ctx.suspend();
+  else if(!document.hidden && Snd.ctx && Snd.ctx.state === "suspended" && Snd.on) Snd.ctx.resume();
+});
+
+window.addEventListener("resize", paintFaces);
+window.addEventListener("load", function(){ paintFaces(); setTimeout(paintFaces, 250); });
+requestAnimationFrame(function(){ requestAnimationFrame(paintFaces); });
+
+/* ============================================================
+   Guarda la partida si la página se vuelve a publicar
+   ============================================================ */
+(function(){
+  var hot = window.claude && window.claude.hot;
+  function start(st){
+    if(st && st.screen === "select"){
+      show(pgSel);
+      setTimeout(paintFaces, 40);
+      if(typeof st.sel === "number" && st.sel >= 0 && PLAYABLE[st.sel]) choose(st.sel);
+    }
+  }
+  if(hot && hot.snapshot) hot.snapshot(function(){
+    return { screen: pgSel.classList.contains("on") ? "select" : "start", sel: sel };
+  });
+  if(hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
+})();
+</script>
