@@ -17,7 +17,7 @@ personaje con su dibujo es innegociable**.
 - **Reparto: 17 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 10 suites, 757 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 10 suites, 758 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
 - Versión publicada: **v1.7** (se ve al pie de la pantalla de inicio).
 
