@@ -1,4 +1,17 @@
-<title>Portada Zombies en el 18</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Zombies en el 18</title>
+<!-- Instalable en el telefono. El NOMBRE que queda bajo el icono lo
+     decide cada sistema: Android lo lee del manifiesto y iOS de
+     `apple-mobile-web-app-title`, asi que los dos tienen que decir lo
+     mismo o la app se llama distinto segun el aparato. -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Zombies en el 18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#120a10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Pixelify+Sans:wght@400;700&display=swap">
@@ -377,7 +390,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
     <div id="cast" aria-label="Los seis personajes en pose de pelea"></div>
     <div id="ctaGlow" aria-hidden="true"></div>
     <div id="cta"><span class="st">★</span>TOCA PARA INICIAR<span class="st">★</span></div>
-    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.6</div>
+    <div id="credits"><b>CRÉDITOS 01</b> · 1 JUGADOR · v1.7</div>
   </div>
 
   <section id="pg-sel" aria-label="Selección de personaje">
@@ -1684,4 +1697,12 @@ startVideo();
 setTimeout(function(){ if(!ended && !playing) startVideo(); }, 900);
 setTimeout(function(){ if(!ended && !playing) useAnim(); }, 2200);
 setTimeout(function(){ if(!ended && !playing) toTitle(); }, 14000);
+/* Registro del service worker. Solo sirve en hosting real: en el
+   artefacto la pagina vive en un contexto aislado y falla, asi que se
+   ignora en silencio en vez de ensuciar la consola. */
+if("serviceWorker" in navigator && location.protocol === "https:"){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
 </script>

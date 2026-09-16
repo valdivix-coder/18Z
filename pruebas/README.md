@@ -14,6 +14,7 @@ suite declarada no está en el disco, **falla** en vez de saltársela.
 |---|---|---|
 | `chk-arnes.py` | El arnés mismo: disco ↔ corredor, que cada suite pueda fallar, que todo esté en git | Las pruebas vivían fuera del repo y se perdieron enteras al reciclarse el entorno. Y una suite imprimía sus fallas saliendo con código 0: la regresión la contaba en verde |
 | `chk-arte.py` | Los dibujos: recorte aplicado, sin fondo colado entre el pelo, rostros en proporción | Quedaban medialunas blancas entre los mechones de La Primera y La Mon |
+| `chk-icono.py` | El icono de la app: sin alfa, sacado del logotipo, zona segura del maskable, manifiesto y service worker | Todo esto falla en SILENCIO: un icono con alfa se ve como un cuadrado blanco en el lanzador y solo se descubre con el juego ya instalado |
 | `test-reparto.py` | `PERSONAJES` es la única lista; lo declarado calza con el archivo | Había dos listas paralelas con los nombres escritos dos veces |
 | `test-portada.py` | El presupuesto vertical de 540 px: suelo, botón, logotipo | El botón «TOCA PARA INICIAR» se sentó encima de las botas de La Mon |
 | `test-seleccion.py` | Grilla, panel PLAYER 1 desde el primer cuadro, escala compartida, pies sin cortar | El personaje no aparecía: un `opacity` en línea le ganaba a la regla del reposo |
