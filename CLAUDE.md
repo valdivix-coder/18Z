@@ -17,9 +17,9 @@ personaje con su dibujo es innegociable**.
 - **Reparto: 17 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 9 suites, ~660 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 10 suites, 757 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
-- Versión publicada: **v1.6** (se ve al pie de la pantalla de inicio).
+- Versión publicada: **v1.7** (se ve al pie de la pantalla de inicio).
 
 ## Regla no negociable
 **El arnés vive DENTRO del repositorio.** Nada que sirva para verificar el juego
@@ -159,6 +159,49 @@ evento: CONTINUAR usa `aria-disabled` y avisa con zumbido y sacudida.
 tienen que estar en el cuadro en que la cortina termina de subir); los cuerpos de
 quienes no salen en la portada, al **entrar** a la selección, donde hay 1,2 s de
 cortina por delante y el gesto ya dijo que la persona está eligiendo.
+
+## El icono de la app, y por qué falla en silencio
+El arte del icono **lo entregó Simón** —«18Z» sobre Santiago ardiendo— y el maestro es
+`assets/icon-512.png`. No hay copia aparte del original: guardar las dos cosas era
+pagar dos veces por la misma imagen, y 512 px ya es el tamaño más grande que pide
+cualquier sistema (Android 512, iPhone 180). De ahí salen los otros tres con
+`herramientas/icono.py`; pasándole una imagen se cambia el maestro y se rehace todo:
+
+```bash
+python3 herramientas/icono.py arte-nuevo.png
+```
+
+**El maestro va en color directo, sin paleta.** Con 256 colores pesaba 176 KB en vez
+de 528, pero el cielo se bandeaba (error medio 4,8 y picos de 141 medidos sobre este
+arte). Es la cara de la app; los 350 KB se pagan.
+
+**Dos reglas de Android que no se pueden saltar:**
+1. **Sin canal alfa.** El lanzador compone lo transparente sobre BLANCO, así que un
+   icono transparente se ve como un cuadrado blanco. Todo se aplana antes de guardar.
+   En iPhone `apple-touch-icon` siempre fue opaco, así que la regla lo cubre de paso.
+2. **El `maskable` se recorta.** Android le aplica la forma del sistema —círculo,
+   cuadrado redondeado, gota— y solo garantiza el **80% central**. En este arte el «1»
+   arranca a un 6% del borde y la «Z» termina a un 95%: sin encoger, la forma del
+   sistema se come las dos puntas. El arte entra al 78% y el hueco lo rellena una copia
+   **ampliada y desenfocada de sí mismo**, que continúa el cielo y el escombro en el
+   sitio que les toca. Un marco de color plano habría dibujado un borde donde el arte
+   se acaba, que es justo lo que un maskable no puede tener.
+
+**El nombre está escrito en dos sitios y tiene que decir lo mismo:** Android lo lee del
+manifiesto (`name` / `short_name`) y iOS de `apple-mobile-web-app-title`. Si se separan,
+la app se llama distinto según el aparato.
+
+**El service worker existe por la instalación, no por la velocidad:** Android no ofrece
+instalar (WebAPK) sin uno que atienda `fetch`. Va a la **red primero** siempre —
+sirviendo desde la caché, un teléfono se queda con la versión vieja, arte incluido, y en
+una app instalada eso no se arregla recargando. Por lo mismo, `vercel.json` prohíbe
+cachear `manifest.json` y `sw.js`.
+
+Nada de esto se ve desde el escritorio: un manifiesto que apunta a un archivo que ya no
+está no da ningún error, Android simplemente cae a su icono de respaldo. Por eso hay una
+suite entera vigilándolo — y comprueba la zona segura **devolviendo a su tamaño el 80%
+central del maskable y comparándolo con el maestro**, que es la única forma de afirmar
+que el arte cabe entero.
 
 ## Cuatro trampas al medir (parecen fallos de la app y no lo son)
 1. **El escenario está escalado** (`transform: scale`). `offsetWidth` da píxeles de

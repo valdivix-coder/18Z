@@ -20,6 +20,7 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 SUITES = [
     "chk-arnes.py",         # el arnes se mira a si mismo, y va primero
     "chk-arte.py",          # integridad de los dibujos, sin navegador
+    "chk-icono.py",         # el icono, el manifiesto y la instalacion
     "test-reparto.py",      # la lista unica calza con los archivos
     "test-portada.py",      # composicion de la pantalla de inicio
     "test-seleccion.py",    # grilla, panel y escala compartida
