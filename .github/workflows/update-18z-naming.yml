@@ -1,0 +1,61 @@
+name: Actualizar nombres 18-Z
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-18z-naming.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-naming:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Separar nombre instalado y titulo publico
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          html_path = Path('inicio.html')
+          html = html_path.read_text(encoding='utf-8')
+
+          html = html.replace(
+              '<title>Zombies en el 18</title>',
+              '<title>18-Z: Zombies en el 18</title>'
+          )
+          html = html.replace(
+              '<meta name="apple-mobile-web-app-title" content="Zombies en el 18">',
+              '<meta name="apple-mobile-web-app-title" content="18-Z">'
+          )
+
+          marker = '<title>18-Z: Zombies en el 18</title>'
+          metadata = '''\n<meta name="application-name" content="18-Z">\n<meta property="og:title" content="18-Z: Zombies en el 18">\n<meta property="og:type" content="website">\n<meta property="og:site_name" content="18-Z">\n<meta name="twitter:card" content="summary">\n<meta name="twitter:title" content="18-Z: Zombies en el 18">'''
+          if '<meta property="og:title"' not in html:
+              html = html.replace(marker, marker + metadata)
+
+          html_path.write_text(html, encoding='utf-8')
+
+          manifest_path = Path('manifest.json')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          manifest['name'] = '18-Z'
+          manifest['short_name'] = '18-Z'
+          manifest_path.write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8'
+          )
+
+      - name: Eliminar workflow temporal
+        run: git rm .github/workflows/update-18z-naming.yml
+
+      - name: Guardar cambios
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inicio.html manifest.json
+          git commit -m "Separar nombre instalado 18-Z del titulo publico"
+          git push
