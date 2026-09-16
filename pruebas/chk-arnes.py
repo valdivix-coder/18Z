@@ -60,8 +60,22 @@ def main():
             os.remove(falsa)
 
     # ---- 4. el corredor NO se salta una suite que falta ----
-    ok("sys.exit(1)" in corredor.split("faltan")[1][:600] if "faltan" in corredor else False,
-       "el corredor FALLA si falta una suite, en vez de saltarsela")
+    #      Probado de verdad, no leyendo el codigo: se hace una copia del
+    #      corredor que declara una suite inexistente y se mira que se
+    #      niegue a correr. Un grep sobre el fuente no prueba conducta.
+    copia = os.path.join(AQUI, "_arnes_corredor_tmp.py")
+    try:
+        open(copia, "w", encoding="utf-8").write(
+            corredor.replace('SUITES = [', 'SUITES = [\n    "test-que-no-existe.py",', 1))
+        r = subprocess.run([sys.executable, copia], cwd=AQUI, capture_output=True, text=True)
+        ok(r.returncode != 0, "el corredor FALLA si falta una suite declarada",
+           f"codigo {r.returncode}")
+        ok("FALTAN SUITES" in r.stdout, "y dice cual falta")
+        ok("comprobaciones" not in r.stdout,
+           "y no corre NADA: una suite que desaparece no se compensa con las otras")
+    finally:
+        if os.path.exists(copia):
+            os.remove(copia)
 
     # ---- 5. ninguna COPIA de produccion dentro de pruebas/ ----
     #      Ha pasado: un script de restauracion con el directorio cambiado
