@@ -24,7 +24,13 @@ QUE MIDE:
  5. El HTML lo enlaza, y dice el MISMO nombre por el lado de iOS.
  6. El service worker existe, se registra, atiende `fetch` —sin eso
     Android no ofrece instalar— y va a la RED PRIMERO.
- 7. Vercel no deja cachear ni el manifiesto ni el service worker.
+ 7. Vercel no deja cachear ni el manifiesto ni el service worker, y la
+    raiz sirve el juego.
+ 8. Hay UN manifiesto y UN service worker, no dos. Dos registrados en el
+    mismo ambito se pisan —gana el ultimo— y dos manifiestos dan dos
+    nombres de instalacion distintos segun por donde se entre. Ya pasó:
+    convivieron un `manifest.json` y un `manifest.webmanifest`, y el
+    segundo instalaba la app como «18Z».
 """
 import json, os, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "herramientas"))
@@ -140,6 +146,24 @@ def main():
     if clave:
         vals = " ".join(x["value"] for x in reglas[clave[0]])
         ok("no-cache" in vals, "el manifiesto no se sirve desde la cache", vals)
+
+    # ---- 8. uno solo de cada cosa --------------------------------------
+    # Dos service workers en el mismo ambito se pisan; dos manifiestos
+    # dan dos nombres de instalacion segun por donde se entre.
+    manis = [f for f in os.listdir(RAIZ) if f.startswith("manifest")]
+    ok(manis == ["manifest.json"], "hay un solo manifiesto en la raiz", manis)
+    sws = [f for f in os.listdir(RAIZ)
+           if f.endswith(".js") and ("sw" in f or "service-worker" in f)]
+    ok(sws == ["sw.js"], "hay un solo service worker en la raiz", sws)
+    # Y una sola puerta de entrada: con dos, cada una trae su manifiesto y
+    # su titulo de iOS, asi que la app se instalaria distinto segun cual
+    # abrio la persona.
+    htmls = sorted(f for f in os.listdir(RAIZ) if f.endswith(".html")
+                   and f != "juego-fase1-historico.html")
+    ok(htmls == ["inicio.html"], "hay una sola puerta de entrada", htmls)
+    v2 = json.load(open(os.path.join(RAIZ, "vercel.json"), encoding="utf-8"))
+    ok(any(r.get("source") == "/" and r.get("destination") == "/inicio.html"
+           for r in v2.get("rewrites", [])), "la raiz del sitio sirve el juego")
 
     ayuda.resumen("chk-icono")
 

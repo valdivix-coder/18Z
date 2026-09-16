@@ -17,7 +17,7 @@ personaje con su dibujo es innegociable**.
 - **Reparto: 17 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 10 suites, 758 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 10 suites, 762 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
 - Versión publicada: **v1.7** (se ve al pie de la pantalla de inicio).
 
@@ -202,6 +202,16 @@ está no da ningún error, Android simplemente cae a su icono de respaldo. Por e
 suite entera vigilándolo — y comprueba la zona segura **devolviendo a su tamaño el 80%
 central del maskable y comparándolo con el maestro**, que es la única forma de afirmar
 que el arte cabe entero.
+
+**Una sola puerta de entrada, un solo manifiesto, un solo service worker.** Convivieron
+un rato dos montajes de PWA hechos en paralelo —`index.html` envolviendo el juego en un
+iframe, con `manifest.webmanifest`, `service-worker.js` e `icons/`— y eso no es
+redundancia sino un fallo: dos service workers en el mismo ámbito se pisan (gana el
+último que se registra) y **cada puerta trae su propio manifiesto y su propio
+`apple-mobile-web-app-title`**, así que la app se instalaba con un nombre u otro según
+por dónde hubiera entrado la persona — «18Z» desde el envoltorio y «Zombies en el 18»
+desde el juego. Se quedó el juego directo: sin iframe, el título de iOS y el manifiesto
+que se leen son los suyos. `chk-icono.py` lo fija.
 
 ## Cuatro trampas al medir (parecen fallos de la app y no lo son)
 1. **El escenario está escalado** (`transform: scale`). `offsetWidth` da píxeles de
