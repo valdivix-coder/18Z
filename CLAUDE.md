@@ -14,12 +14,12 @@ personaje con su dibujo es innegociable**.
 - **Hecho:** pantalla de inicio (intro en video + coreografía de entrada + ambiente
   sintetizado) y pantalla de **selección de personaje** (cortina metálica, grilla de
   30 casillas, panel PLAYER 1 con el personaje en reposo de pelea, CONTINUAR).
-- **Reparto: 17 personajes.** La grilla los muestra a todos en orden alfabético; la
+- **Reparto: 18 personajes.** La grilla los muestra a todos en orden alfabético; la
   portada sortea **cinco** en cada carga, alternando hombre y mujer.
 - **El juego en sí NO existe todavía.** CONTINUAR vuelve a la pantalla de inicio.
-- **Regresión: 10 suites, 762 comprobaciones**, dentro del repo en `pruebas/`.
+- **Regresión: 10 suites, 789 comprobaciones**, dentro del repo en `pruebas/`.
   Se corre con `cd pruebas && python3 correr-todo.py`.
-- Versión publicada: **v1.7** (se ve al pie de la pantalla de inicio).
+- Versión publicada: **v1.8** (se ve al pie de la pantalla de inicio).
 
 ## Regla no negociable
 **El arnés vive DENTRO del repositorio.** Nada que sirva para verificar el juego
@@ -53,6 +53,15 @@ que igualaría las caras pero se acota a **[470, 530]**. La disparidad de caras 
 1,30 a 1,18 y la de estaturas se queda en 1,13.
 - `sexo` → `"h"` o `"m"`. Lo usa la alternancia de la portada, nada más.
 
+**Un dibujo más caricaturesco se va al SUELO de la banda, y está bien.** Juancho está
+dibujado con cinco cabezas de alto —achaparrado y con la cabeza enorme— mientras el
+resto anda en siete. Medido a la misma escala, su cabeza da 52 px contra los ~35 de
+Tatán y Don Alberto: igualarlas pediría bajarlo a 316, muy por debajo del mínimo. Así
+que el tope lo deja en **470**, el suelo, y se lee como lo que el dibujo dice que es —
+un tipo bajo y ancho— en vez de como alguien más grande que el resto. La proporción del
+dibujo daba 541: **el número que imprime `sumar-personaje.py` no es una estatura**, es
+la proporción de la lámina, y hay que medirlo contra otros dos antes de dejarlo.
+
 **El orden de la lista no significa nada.** La grilla se ordena sola por nombre
 (`GRILLA`, con `localeCompare` en español para que Tatán y La Tía Evelyn caigan donde
 corresponde) y la portada se sortea (`portadaDelDia()`). Se puede pegar una línea
@@ -61,8 +70,8 @@ nueva donde caiga.
 ## La portada no tiene protagonista
 Cada carga sortea **cinco** alternando hombre y mujer, centrados, empezando al azar
 por uno u otro. Elegir unos fijos sería decidir quiénes son los importantes, y aquí
-todos lo son. Con 15 hay miles de combinaciones y crecen solas: no hay nada que
-ajustar al sumar gente.
+todos lo son. Con 18 hay decenas de miles de combinaciones y crecen solas: no hay
+nada que ajustar al sumar gente.
 
 **La escala se mide contra el techo FIJO del reparto** (`ALTO_MAYOR`), no contra el
 más alto de los cinco de hoy. Si se midiera contra el subconjunto, un mismo personaje
@@ -70,7 +79,7 @@ se vería de distinto tamaño según la compañía y el logotipo cambiaría de p
 carga. Lo único que cambia es **quiénes** salen. `test-portada.py` lo comprueba
 recargando doce veces y exigiendo que cada personaje mida siempre lo mismo.
 
-Un efecto secundario conocido: con 9 hombres y 6 mujeres, una mujer sale ~1,9 veces
+Un efecto secundario conocido: con 12 hombres y 6 mujeres, una mujer sale **2,0 veces**
 más seguido que un hombre — no es un fallo sino la consecuencia de exigir alternancia
 con un reparto desparejo. Se empareja solo a medida que el reparto se equilibra.
 
@@ -103,9 +112,12 @@ columna izquierda y las seis siguientes vacías: su proporción salía 0,993 en 
 probaron dos métricas —piel al centro del recorte y piel pegada al borde de arriba— y
 **ninguna separa** un recorte bien puesto de uno con la cara fuera de cuadro (23,3 %
 el malo contra 22,6 % el bueno). Lo que sí se comprueba es que el rostro **corresponda
-al cuerpo actual**, regenerándolo y comparando. Cuando el detector de cara falla —a La
-Primera le puso el centro en el 34 % del ancho cuando estaba en el 51 %— se ancla a
-mano en `herramientas/ajuste.json`: `[alto, subida, x opcional, y opcional]`.
+al cuerpo actual**, regenerándolo y comparando. Cuando el detector de cara falla se ancla a mano en
+`herramientas/ajuste.json`: `[alto, subida, x opcional, y opcional]`. Falla de dos
+maneras ya vistas: a La Primera le puso el centro en el 34 % del ancho cuando estaba en
+el 51 %, y con Juancho se fue a la **cresta del gallo** que lleva bajo el brazo —es roja
+y cumple la regla de piel—, dejando la cara en el 32 % cuando está en el 51,5 %. Ahí el
+ajuste lleva sus cuatro números.
 
 Cuando el fondo es blanco plano, el relleno desde el borde quita el fondo exterior,
 pero **no** las islas que quedan encerradas entre los mechones del pelo — y esas se
@@ -238,6 +250,6 @@ que se leen son los suyos. `chk-icono.py` lo fija.
 - **El juego en sí.** Hoy CONTINUAR vuelve al inicio.
 - **La Naya es la única con arte de la primera lámina**; si llega su versión nueva, es
   reemplazar dos archivos y ajustar su ancho.
-- Quedan **15 casillas libres** en la grilla.
+- Quedan **12 casillas libres** en la grilla.
 - Nombre a confirmar: **«La Soa Janet»** está escrito tal como llegó; podría ser
   «La Sra. Janet».
